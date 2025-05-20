@@ -4,7 +4,7 @@ edition = "2024"
 version.workspace = true
 
 [dependencies]
-bitcoin = { workspace = true, deafult-features = false }
+bitcoin = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 strum_macros  = { workspace = true }
 

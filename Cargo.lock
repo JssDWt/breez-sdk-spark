@@ -214,6 +214,7 @@ name = "breez-sdk-core"
 version = "0.1.0"
 dependencies = [
  "breez-sdk-input",
+ "breez-sdk-internal",
  "lightning",
  "serde",
 ]
@@ -223,6 +224,7 @@ name = "breez-sdk-greenlight"
 version = "0.1.0"
 dependencies = [
  "breez-sdk-core",
+ "breez-sdk-internal",
 ]
 
 [[package]]
@@ -235,10 +237,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "breez-sdk-internal"
+version = "0.1.0"
+dependencies = [
+ "breez-sdk-input",
+]
+
+[[package]]
 name = "breez-sdk-liquid"
 version = "0.1.0"
 dependencies = [
  "breez-sdk-core",
+ "breez-sdk-internal",
 ]
 
 [[package]]

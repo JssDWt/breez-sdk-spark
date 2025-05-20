@@ -6,7 +6,15 @@ panic = "abort"   # Abort on panic, as unwinding code does require extra binary 
 rpath = true
 
 [workspace]
-members = ["lib/core", "lib/input", "lib/greenlight", "lib/sdk", "lib/liquid", "lib/bindings"]
+members = [
+    "lib/core",
+    "lib/input",
+    "lib/greenlight",
+    "lib/sdk",
+    "lib/liquid",
+    "lib/bindings",
+    "lib/internal"
+]
 resolver = "2"
 
 [workspace.package]
@@ -24,10 +32,11 @@ must_use_candidate = "allow"
 arithmetic_side_effects = "warn"
 
 [workspace.dependencies]
-bitcoin = "0.32.6"
+bitcoin = { version = "0.32.6", default-features = false }
 breez-sdk-core = { path = "lib/core" }
 breez-sdk-greenlight = { path = "lib/greenlight" }
 breez-sdk-input = { path = "lib/input" }
+breez-sdk-internal = { path = "lib/internal" }
 breez-sdk-liquid = { path = "lib/liquid" }
 lightning = "0.1.3"
 serde = "1.0.219"

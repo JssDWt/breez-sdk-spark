@@ -3,6 +3,7 @@ mod models;
 
 use std::{collections::HashMap, sync::Arc};
 
+use breez_sdk_internal::BreezServicesImpl;
 use error::{
     ParseAndPickError, PickPaymentMethodError, PrepareSendBitcoinError, PrepareSendLightningError,
     PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
@@ -43,11 +44,6 @@ impl<P> PaymentMethodSource<P> {
             },
         }
     }
-}
-
-pub trait BreezServicesImpl: Send + Sync {
-    /// Returns the payment methods supported by this implementation, ordered by preference.
-    fn get_payment_methods(&self) -> Vec<PaymentMethodType>;
 }
 
 pub struct BreezServices<B> {

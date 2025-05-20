@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use breez_sdk_core::{BreezServices, BreezServicesImpl, PaymentMethodType};
+use breez_sdk_core::{BreezServices, PaymentMethodType};
+use breez_sdk_internal::BreezServicesImpl;
 
 pub struct ConnectRequest {}
 

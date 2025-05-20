@@ -5,6 +5,7 @@ version.workspace = true
 
 [dependencies]
 breez-sdk-input = { workspace = true }
+breez-sdk-internal = { workspace = true }
 lightning = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 

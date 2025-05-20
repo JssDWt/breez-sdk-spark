@@ -5,6 +5,7 @@ version.workspace = true
 
 [dependencies]
 breez-sdk-core = { workspace = true }
+breez-sdk-internal = { workspace = true }
 
 [lints]
 workspace = true
