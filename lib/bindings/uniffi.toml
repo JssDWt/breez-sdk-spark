@@ -22,8 +22,3 @@ access_modifier = "public"
 [bindings.go]
 package_name = "breez_sdk"
 cdylib_name = "breez_sdk_bindings"
-
-# https://github.com/NiallBunting/uniffi-rs-dart
-[bindings.dart]
-package_name = "breez_sdk"
-cdylib_name = "breez_sdk_bindings"
