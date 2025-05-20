@@ -17,13 +17,10 @@ impl From<PickPaymentMethodError> for ParseAndPickError {
 pub enum PickPaymentMethodError {
     Unsupported,
 }
-pub enum PrepareSendBitcoinAddressError {
+pub enum PrepareSendBitcoinError {
     InvalidAddress,
     InvalidNetwork,
 }
-pub enum PrepareSendBolt11InvoiceError {}
-pub enum PrepareSendBolt12InvoiceError {}
-pub enum PrepareSendBolt12OfferError {}
-pub enum PrepareSendLightningAddressError {}
+pub enum PrepareSendLightningError {}
 pub enum PrepareSendLiquidAddressError {}
 pub enum PrepareSendLnurlPayError {}

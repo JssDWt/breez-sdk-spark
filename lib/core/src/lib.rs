@@ -4,17 +4,13 @@ mod models;
 use std::{collections::HashMap, sync::Arc};
 
 use error::{
-    ParseAndPickError, PickPaymentMethodError, PrepareSendBitcoinAddressError,
-    PrepareSendBolt11InvoiceError, PrepareSendBolt12InvoiceError, PrepareSendBolt12OfferError,
-    PrepareSendLightningAddressError, PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
+    ParseAndPickError, PickPaymentMethodError, PrepareSendBitcoinError, PrepareSendLightningError,
+    PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
 };
 use models::{
-    Bip21Source, Bip353Source, PaymentMethodSource, PrepareSendBitcoinAddressRequest,
-    PrepareSendBitcoinAddressResponse, PrepareSendBolt11InvoiceRequest,
-    PrepareSendBolt11InvoiceResponse, PrepareSendBolt12InvoiceRequest,
-    PrepareSendBolt12InvoiceResponse, PrepareSendBolt12OfferRequest,
-    PrepareSendBolt12OfferResponse, PrepareSendLightningAddressRequest,
-    PrepareSendLightningAddressResponse, PrepareSendLiquidAddressRequest,
+    Bip21Source, Bip353Source, BitcoinPaymentMethod, LightningPaymentMethod, LnurlPaymentMethod,
+    PaymentMethodSource, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
+    PrepareSendLightningRequest, PrepareSendLightningResponse, PrepareSendLiquidAddressRequest,
     PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
     SourcedInputType, SourcedPaymentMethod,
 };
@@ -86,6 +82,7 @@ where
         &self,
         payment_request: PaymentRequest,
     ) -> Result<SourcedPaymentMethod, PickPaymentMethodError> {
+        // TODO: Liquid should unpack the magic routing hint for example to send to a liquid address directly.
         let supported = self.implementation.get_payment_methods();
         Ok(match payment_request {
             PaymentRequest::Bip21(bip_21) => self.expand_bip_21(bip_21, &supported).await?,
@@ -94,57 +91,31 @@ where
         })
     }
 
-    pub async fn prepare_send_bitcoin_address(
+    pub async fn prepare_send_bitcoin(
         &self,
-        req: PrepareSendBitcoinAddressRequest,
-    ) -> Result<PrepareSendBitcoinAddressResponse, PrepareSendBitcoinAddressError> {
-        let unpacked = req.bitcoin_address.unpack();
-        if unpacked.payment_method.network != self.network {
-            return Err(PrepareSendBitcoinAddressError::InvalidNetwork);
-        }
-
+        req: PrepareSendBitcoinRequest,
+    ) -> Result<PrepareSendBitcoinResponse, PrepareSendBitcoinError> {
         todo!()
     }
 
-    pub async fn prepare_send_bolt11_invoice(
+    pub async fn prepare_send_lightning(
         &self,
-        bolt11_invoice: PrepareSendBolt11InvoiceRequest,
-    ) -> Result<PrepareSendBolt11InvoiceResponse, PrepareSendBolt11InvoiceError> {
-        todo!()
-    }
-
-    pub async fn prepare_send_bolt12_invoice(
-        &self,
-        bolt12_invoice: PrepareSendBolt12InvoiceRequest,
-    ) -> Result<PrepareSendBolt12InvoiceResponse, PrepareSendBolt12InvoiceError> {
-        todo!()
-    }
-
-    pub async fn prepare_send_bolt12_offer(
-        &self,
-        bolt12_offer: PrepareSendBolt12OfferRequest,
-    ) -> Result<PrepareSendBolt12OfferResponse, PrepareSendBolt12OfferError> {
-        todo!()
-    }
-
-    pub async fn prepare_send_lightning_address(
-        &self,
-        lightning_address: PrepareSendLightningAddressRequest,
-    ) -> Result<PrepareSendLightningAddressResponse, PrepareSendLightningAddressError> {
-        todo!()
-    }
-
-    pub async fn prepare_send_liquid_address(
-        &self,
-        liquid_address: PrepareSendLiquidAddressRequest,
-    ) -> Result<PrepareSendLiquidAddressResponse, PrepareSendLiquidAddressError> {
+        req: PrepareSendLightningRequest,
+    ) -> Result<PrepareSendLightningResponse, PrepareSendLightningError> {
         todo!()
     }
 
     pub async fn prepare_send_lnurl_pay(
         &self,
-        lnurl_pay_request: PrepareSendLnurlPayRequest,
+        req: PrepareSendLnurlPayRequest,
     ) -> Result<PrepareSendLnurlPayResponse, PrepareSendLnurlPayError> {
+        todo!()
+    }
+
+    pub async fn prepare_send_liquid_address(
+        &self,
+        req: PrepareSendLiquidAddressRequest,
+    ) -> Result<PrepareSendLiquidAddressResponse, PrepareSendLiquidAddressError> {
         todo!()
     }
 }
@@ -174,36 +145,42 @@ where
 
             return Ok(match payment_method {
                 PaymentMethod::BitcoinAddress(bitcoin_address) => {
-                    SourcedPaymentMethod::BitcoinAddress(PaymentMethodSource::Bip21(Bip21Source {
+                    SourcedPaymentMethod::Bitcoin(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: bitcoin_address.clone(),
+                        payment_method: BitcoinPaymentMethod::BitcoinAddress(
+                            bitcoin_address.clone(),
+                        ),
                     }))
                 }
                 PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
-                    SourcedPaymentMethod::Bolt11Invoice(PaymentMethodSource::Bip21(Bip21Source {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: bolt11_invoice.clone(),
+                        payment_method: LightningPaymentMethod::Bolt11Invoice(
+                            bolt11_invoice.clone(),
+                        ),
                     }))
                 }
                 PaymentMethod::Bolt12Invoice(bolt12_invoice) => {
-                    SourcedPaymentMethod::Bolt12Invoice(PaymentMethodSource::Bip21(Bip21Source {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: bolt12_invoice.clone(),
+                        payment_method: LightningPaymentMethod::Bolt12Invoice(
+                            bolt12_invoice.clone(),
+                        ),
                     }))
                 }
                 PaymentMethod::Bolt12Offer(bolt12_offer) => {
-                    SourcedPaymentMethod::Bolt12Offer(PaymentMethodSource::Bip21(Bip21Source {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: bolt12_offer.clone(),
+                        payment_method: LightningPaymentMethod::Bolt12Offer(bolt12_offer.clone()),
                     }))
                 }
                 PaymentMethod::LightningAddress(lightning_address) => {
-                    SourcedPaymentMethod::LightningAddress(PaymentMethodSource::Bip21(
-                        Bip21Source {
-                            bip_21_uri: bip_21.bip_21,
-                            payment_method: lightning_address.clone(),
-                        },
-                    ))
+                    SourcedPaymentMethod::LnurlPay(PaymentMethodSource::Bip21(Bip21Source {
+                        bip_21_uri: bip_21.bip_21,
+                        payment_method: LnurlPaymentMethod::LightningAddress(
+                            lightning_address.clone(),
+                        ),
+                    }))
                 }
                 PaymentMethod::LiquidAddress(liquid_address) => {
                     SourcedPaymentMethod::LiquidAddress(PaymentMethodSource::Bip21(Bip21Source {
@@ -214,16 +191,16 @@ where
                 PaymentMethod::LnurlPay(lnurl_pay_request) => {
                     SourcedPaymentMethod::LnurlPay(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: lnurl_pay_request.clone(),
+                        payment_method: LnurlPaymentMethod::LnurlPay(lnurl_pay_request.clone()),
                     }))
                 }
                 PaymentMethod::SilentPaymentAddress(silent_payment_address) => {
-                    SourcedPaymentMethod::SilentPaymentAddress(PaymentMethodSource::Bip21(
-                        Bip21Source {
-                            bip_21_uri: bip_21.bip_21,
-                            payment_method: silent_payment_address.clone(),
-                        },
-                    ))
+                    SourcedPaymentMethod::Bitcoin(PaymentMethodSource::Bip21(Bip21Source {
+                        bip_21_uri: bip_21.bip_21,
+                        payment_method: BitcoinPaymentMethod::SilentPaymentAddress(
+                            silent_payment_address.clone(),
+                        ),
+                    }))
                 }
             });
         }
@@ -252,53 +229,59 @@ where
 
             return Ok(match payment_method {
                 PaymentMethod::BitcoinAddress(bitcoin_address) => {
-                    SourcedPaymentMethod::BitcoinAddress(PaymentMethodSource::Bip353(
-                        Bip353Source {
-                            bip_353_uri: bip_353.address,
-                            bip_21: Bip21Source {
-                                bip_21_uri: bip_353.bip_21.bip_21,
-                                payment_method: bitcoin_address.clone(),
-                            },
-                        },
-                    ))
-                }
-                PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
-                    SourcedPaymentMethod::Bolt11Invoice(PaymentMethodSource::Bip353(Bip353Source {
+                    SourcedPaymentMethod::Bitcoin(PaymentMethodSource::Bip353(Bip353Source {
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: bolt11_invoice.clone(),
+                            payment_method: BitcoinPaymentMethod::BitcoinAddress(
+                                bitcoin_address.clone(),
+                            ),
+                        },
+                    }))
+                }
+                PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip353(Bip353Source {
+                        bip_353_uri: bip_353.address,
+                        bip_21: Bip21Source {
+                            bip_21_uri: bip_353.bip_21.bip_21,
+                            payment_method: LightningPaymentMethod::Bolt11Invoice(
+                                bolt11_invoice.clone(),
+                            ),
                         },
                     }))
                 }
                 PaymentMethod::Bolt12Invoice(bolt12_invoice) => {
-                    SourcedPaymentMethod::Bolt12Invoice(PaymentMethodSource::Bip353(Bip353Source {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip353(Bip353Source {
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: bolt12_invoice.clone(),
+                            payment_method: LightningPaymentMethod::Bolt12Invoice(
+                                bolt12_invoice.clone(),
+                            ),
                         },
                     }))
                 }
                 PaymentMethod::Bolt12Offer(bolt12_offer) => {
-                    SourcedPaymentMethod::Bolt12Offer(PaymentMethodSource::Bip353(Bip353Source {
+                    SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip353(Bip353Source {
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: bolt12_offer.clone(),
+                            payment_method: LightningPaymentMethod::Bolt12Offer(
+                                bolt12_offer.clone(),
+                            ),
                         },
                     }))
                 }
                 PaymentMethod::LightningAddress(lightning_address) => {
-                    SourcedPaymentMethod::LightningAddress(PaymentMethodSource::Bip353(
-                        Bip353Source {
-                            bip_353_uri: bip_353.address,
-                            bip_21: Bip21Source {
-                                bip_21_uri: bip_353.bip_21.bip_21,
-                                payment_method: lightning_address.clone(),
-                            },
+                    SourcedPaymentMethod::LnurlPay(PaymentMethodSource::Bip353(Bip353Source {
+                        bip_353_uri: bip_353.address,
+                        bip_21: Bip21Source {
+                            bip_21_uri: bip_353.bip_21.bip_21,
+                            payment_method: LnurlPaymentMethod::LightningAddress(
+                                lightning_address.clone(),
+                            ),
                         },
-                    ))
+                    }))
                 }
                 PaymentMethod::LiquidAddress(liquid_address) => {
                     SourcedPaymentMethod::LiquidAddress(PaymentMethodSource::Bip353(Bip353Source {
@@ -314,20 +297,20 @@ where
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: lnurl_pay_request.clone(),
+                            payment_method: LnurlPaymentMethod::LnurlPay(lnurl_pay_request.clone()),
                         },
                     }))
                 }
                 PaymentMethod::SilentPaymentAddress(silent_payment_address) => {
-                    SourcedPaymentMethod::SilentPaymentAddress(PaymentMethodSource::Bip353(
-                        Bip353Source {
-                            bip_353_uri: bip_353.address,
-                            bip_21: Bip21Source {
-                                bip_21_uri: bip_353.bip_21.bip_21,
-                                payment_method: silent_payment_address.clone(),
-                            },
+                    SourcedPaymentMethod::Bitcoin(PaymentMethodSource::Bip353(Bip353Source {
+                        bip_353_uri: bip_353.address,
+                        bip_21: Bip21Source {
+                            bip_21_uri: bip_353.bip_21.bip_21,
+                            payment_method: BitcoinPaymentMethod::SilentPaymentAddress(
+                                silent_payment_address.clone(),
+                            ),
                         },
-                    ))
+                    }))
                 }
             });
         }

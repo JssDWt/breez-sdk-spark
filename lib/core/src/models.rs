@@ -26,65 +26,40 @@ pub enum PaymentMethodSource<P> {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBitcoinAddressRequest {
-    pub bitcoin_address: PaymentMethodSource<BitcoinAddress>,
+pub struct PrepareSendBitcoinRequest {
+    pub address: PaymentMethodSource<BitcoinPaymentMethod>,
     pub fee_rate_sat_per_kw: Option<u32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBitcoinAddressResponse {
-    pub req: PrepareSendBitcoinAddressRequest,
+pub struct PrepareSendBitcoinResponse {
+    pub req: PrepareSendBitcoinRequest,
     pub fee_msat: u64,
     pub fee_msat_breakdown: HashMap<String, u64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt11InvoiceRequest {
-    pub bolt11: PaymentMethodSource<Bolt11Invoice>,
-    pub amount_msat: Option<u64>,
+pub struct PrepareSendLightningRequest {
+    pub bolt11: PaymentMethodSource<LightningPaymentMethod>,
+    pub amount_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt11InvoiceResponse {
-    pub req: PrepareSendBolt11InvoiceRequest,
+pub struct PrepareSendLightningResponse {
+    pub req: PrepareSendLightningRequest,
     pub fee_msat: u64,
     pub maximum_network_fee_msat: Option<u64>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt12InvoiceRequest {
-    pub bolt12_invoice: PaymentMethodSource<Bolt12Invoice>,
+pub struct PrepareSendLnurlPayRequest {
+    pub lnurl_pay: PaymentMethodSource<LnurlPaymentMethod>,
+    pub amount_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt12InvoiceResponse {
-    pub req: PrepareSendBolt12InvoiceRequest,
-    pub fee_msat: u64,
-    pub maximum_network_fee_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt12OfferRequest {
-    pub offer: PaymentMethodSource<Bolt12Offer>,
-    pub amount_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBolt12OfferResponse {
-    pub req: PrepareSendBolt12OfferRequest,
-    pub fee_msat: u64,
-    pub maximum_network_fee_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLightningAddressRequest {
-    pub address: PaymentMethodSource<LightningAddress>,
-    pub amount_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLightningAddressResponse {
-    pub req: PrepareSendLightningAddressRequest,
+pub struct PrepareSendLnurlPayResponse {
+    pub req: PrepareSendLnurlPayRequest,
     pub fee_msat: u64,
     pub maximum_network_fee_msat: Option<u64>,
 }
@@ -103,59 +78,59 @@ pub struct PrepareSendLiquidAddressResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLnurlPayRequest {
-    pub request: PaymentMethodSource<LnurlPayRequest>,
-    pub amount_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLnurlPayResponse {
-    pub req: PrepareSendLnurlPayRequest,
-    pub fee_msat: u64,
-    pub maximum_network_fee_msat: Option<u64>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum SourcedPaymentMethod {
-    BitcoinAddress(PaymentMethodSource<BitcoinAddress>),
-    Bolt11Invoice(PaymentMethodSource<Bolt11Invoice>),
-    Bolt12Invoice(PaymentMethodSource<Bolt12Invoice>),
-    Bolt12Offer(PaymentMethodSource<Bolt12Offer>),
-    LightningAddress(PaymentMethodSource<LightningAddress>),
+    Bitcoin(PaymentMethodSource<BitcoinPaymentMethod>),
+    Lightning(PaymentMethodSource<LightningPaymentMethod>),
+    LnurlPay(PaymentMethodSource<LnurlPaymentMethod>),
     LiquidAddress(PaymentMethodSource<LiquidAddress>),
-    LnurlPay(PaymentMethodSource<LnurlPayRequest>),
-    SilentPaymentAddress(PaymentMethodSource<SilentPaymentAddress>),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum BitcoinPaymentMethod {
+    BitcoinAddress(BitcoinAddress),
+    SilentPaymentAddress(SilentPaymentAddress),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum LightningPaymentMethod {
+    Bolt11Invoice(Bolt11Invoice),
+    Bolt12Invoice(Bolt12Invoice),
+    Bolt12Offer(Bolt12Offer),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum LnurlPaymentMethod {
+    LnurlPay(LnurlPayRequest),
+    LightningAddress(LightningAddress),
 }
 
 impl From<PaymentMethod> for SourcedPaymentMethod {
     fn from(value: PaymentMethod) -> Self {
         match value {
-            PaymentMethod::BitcoinAddress(bitcoin_address) => {
-                SourcedPaymentMethod::BitcoinAddress(PaymentMethodSource::Plain(bitcoin_address))
-            }
-            PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
-                SourcedPaymentMethod::Bolt11Invoice(PaymentMethodSource::Plain(bolt11_invoice))
-            }
-            PaymentMethod::Bolt12Invoice(bolt12_invoice) => {
-                SourcedPaymentMethod::Bolt12Invoice(PaymentMethodSource::Plain(bolt12_invoice))
-            }
-            PaymentMethod::Bolt12Offer(bolt12_offer) => {
-                SourcedPaymentMethod::Bolt12Offer(PaymentMethodSource::Plain(bolt12_offer))
-            }
-            PaymentMethod::LightningAddress(lightning_address) => {
-                SourcedPaymentMethod::LightningAddress(PaymentMethodSource::Plain(
-                    lightning_address,
-                ))
-            }
+            PaymentMethod::BitcoinAddress(bitcoin_address) => SourcedPaymentMethod::Bitcoin(
+                PaymentMethodSource::Plain(BitcoinPaymentMethod::BitcoinAddress(bitcoin_address)),
+            ),
+            PaymentMethod::Bolt11Invoice(bolt11_invoice) => SourcedPaymentMethod::Lightning(
+                PaymentMethodSource::Plain(LightningPaymentMethod::Bolt11Invoice(bolt11_invoice)),
+            ),
+            PaymentMethod::Bolt12Invoice(bolt12_invoice) => SourcedPaymentMethod::Lightning(
+                PaymentMethodSource::Plain(LightningPaymentMethod::Bolt12Invoice(bolt12_invoice)),
+            ),
+            PaymentMethod::Bolt12Offer(bolt12_offer) => SourcedPaymentMethod::Lightning(
+                PaymentMethodSource::Plain(LightningPaymentMethod::Bolt12Offer(bolt12_offer)),
+            ),
+            PaymentMethod::LightningAddress(lightning_address) => SourcedPaymentMethod::LnurlPay(
+                PaymentMethodSource::Plain(LnurlPaymentMethod::LightningAddress(lightning_address)),
+            ),
             PaymentMethod::LiquidAddress(liquid_address) => {
                 SourcedPaymentMethod::LiquidAddress(PaymentMethodSource::Plain(liquid_address))
             }
-            PaymentMethod::LnurlPay(lnurl_pay_request) => {
-                SourcedPaymentMethod::LnurlPay(PaymentMethodSource::Plain(lnurl_pay_request))
-            }
+            PaymentMethod::LnurlPay(lnurl_pay_request) => SourcedPaymentMethod::LnurlPay(
+                PaymentMethodSource::Plain(LnurlPaymentMethod::LnurlPay(lnurl_pay_request)),
+            ),
             PaymentMethod::SilentPaymentAddress(silent_payment_address) => {
-                SourcedPaymentMethod::SilentPaymentAddress(PaymentMethodSource::Plain(
-                    silent_payment_address,
+                SourcedPaymentMethod::Bitcoin(PaymentMethodSource::Plain(
+                    BitcoinPaymentMethod::SilentPaymentAddress(silent_payment_address),
                 ))
             }
         }
