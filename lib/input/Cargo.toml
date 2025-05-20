@@ -1,0 +1,12 @@
+[package]
+name = "breez-sdk-input"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+bitcoin = { workspace = true, deafult-features = false }
+serde = { workspace = true, features = ["derive"] }
+strum_macros  = { workspace = true }
+
+[lints]
+workspace = true

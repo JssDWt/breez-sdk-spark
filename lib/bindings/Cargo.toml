@@ -1,0 +1,22 @@
+[package]
+name = "breez-sdk-bindings"
+edition = "2024"
+version.workspace = true
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"
+
+[lib]
+name = "breez_sdk_bindings"
+crate-type = ["staticlib", "cdylib", "lib"]
+
+[dependencies]
+breez-sdk-core = { workspace = true }
+uniffi = { workspace = true, features = [ "cli" ] }
+
+[build-dependencies]
+uniffi = { workspace = true, features = [ "build" ] }
+
+[lints]
+workspace = true

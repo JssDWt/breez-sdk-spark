@@ -1,0 +1,12 @@
+[package]
+name = "breez-sdk-core"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+breez-sdk-input = { workspace = true }
+lightning = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[lints]
+workspace = true

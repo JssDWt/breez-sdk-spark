@@ -1,0 +1,10 @@
+[package]
+name = "breez-sdk-liquid"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+breez-sdk-core = { workspace = true }
+
+[lints]
+workspace = true

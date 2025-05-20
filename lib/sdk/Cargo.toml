@@ -1,0 +1,11 @@
+[package]
+name = "breez-sdk"
+edition = "2024"
+version.workspace = true
+
+[dependencies]
+breez-sdk-greenlight = { workspace = true }
+breez-sdk-liquid = { workspace = true }
+
+[lints]
+workspace = true
