@@ -3,9 +3,6 @@ mod models;
 
 use std::{collections::HashMap, sync::Arc};
 
-use breez_sdk_input::{
-    Bip21, Bip353, InputType, Network, PaymentMethod, PaymentMethodType, PaymentRequest,
-};
 use error::{
     ParseAndPickError, PickPaymentMethodError, PrepareSendBitcoinAddressError,
     PrepareSendBolt11InvoiceError, PrepareSendBolt12InvoiceError, PrepareSendBolt12OfferError,
@@ -21,6 +18,8 @@ use models::{
     PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
     SourcedInputType, SourcedPaymentMethod,
 };
+
+pub use breez_sdk_input::*;
 
 struct UnpackedPaymentMethod<P> {
     pub payment_method: P,

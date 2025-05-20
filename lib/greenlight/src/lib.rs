@@ -1,11 +1,19 @@
 use std::sync::Arc;
 
-use breez_sdk_core::BreezServices;
+use breez_sdk_core::{BreezServices, BreezServicesImpl, PaymentMethodType};
 
 pub struct ConnectRequest {}
 
 pub enum ConnectError {}
 
-pub async fn connect(req: ConnectRequest) -> Result<Arc<BreezServices>, ConnectError> {
+pub async fn connect(req: ConnectRequest) -> Result<Arc<BreezServices<Greenlight>>, ConnectError> {
     todo!()
+}
+
+pub struct Greenlight {}
+
+impl BreezServicesImpl for Greenlight {
+    fn get_payment_methods(&self) -> Vec<PaymentMethodType> {
+        todo!()
+    }
 }
