@@ -194,14 +194,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "breez-sdk"
-version = "0.1.0"
-dependencies = [
- "breez-sdk-greenlight",
- "breez-sdk-liquid",
-]
-
-[[package]]
 name = "breez-sdk-bindings"
 version = "0.1.0"
 dependencies = [
