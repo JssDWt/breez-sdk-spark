@@ -285,18 +285,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "breez-sdk-greenlight"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "breez-sdk-core",
- "breez-sdk-input",
- "breez-sdk-internal",
- "breez-sdk-macros",
- "serde",
-]
-
-[[package]]
 name = "breez-sdk-input"
 version = "0.1.0"
 dependencies = [
@@ -310,18 +298,6 @@ name = "breez-sdk-internal"
 version = "0.1.0"
 dependencies = [
  "breez-sdk-input",
-]
-
-[[package]]
-name = "breez-sdk-liquid"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "breez-sdk-core",
- "breez-sdk-input",
- "breez-sdk-internal",
- "breez-sdk-macros",
- "serde",
 ]
 
 [[package]]

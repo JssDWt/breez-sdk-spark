@@ -21,76 +21,67 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bip21Source<P> {
-    pub bip_21_uri: String,
-    pub payment_method: P,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bip353Source<P> {
-    pub bip_353_uri: String,
-    pub bip_21: Bip21Source<P>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum BitcoinPaymentMethod {
     BitcoinAddress(BitcoinAddress),
     SilentPaymentAddress(SilentPaymentAddress),
 }
 
 #[async_trait]
-pub trait BreezServices<A, D, F> {
-    async fn parse_and_pick(&self, input: &str) -> Result<SourcedInputType<A>, ParseAndPickError>;
+pub trait BreezServices {
+    async fn parse_and_pick(&self, input: &str) -> Result<PickedInputType, ParseAndPickError>;
     async fn pick_payment_method(
         &self,
         payment_request: PaymentRequest,
-    ) -> Result<SourcedPaymentMethod<A>, PickPaymentMethodError>;
+    ) -> Result<PickedPaymentMethod, PickPaymentMethodError>;
     async fn prepare_send_bitcoin(
         &self,
         req: PrepareSendBitcoinRequest,
-    ) -> Result<PrepareSendBitcoinResponse<A, F>, PrepareSendBitcoinError>;
+    ) -> Result<PrepareSendBitcoinResponse, PrepareSendBitcoinError>;
     async fn prepare_send_lightning(
         &self,
-        req: PrepareSendLightningRequest<A>,
-    ) -> Result<PrepareSendLightningResponse<A, F>, PrepareSendLightningError>;
+        req: PrepareSendLightningRequest,
+    ) -> Result<PrepareSendLightningResponse, PrepareSendLightningError>;
     async fn prepare_send_lnurl_pay(
         &self,
-        req: PrepareSendLnurlPayRequest<A>,
-    ) -> Result<PrepareSendLnurlPayResponse<A, F>, PrepareSendLnurlPayError>;
+        req: PrepareSendLnurlPayRequest,
+    ) -> Result<PrepareSendLnurlPayResponse, PrepareSendLnurlPayError>;
     async fn prepare_send_liquid_address(
         &self,
-        req: PrepareSendLiquidAddressRequest<A>,
-    ) -> Result<PrepareSendLiquidAddressResponse<A, F>, PrepareSendLiquidAddressError>;
+        req: PrepareSendLiquidAddressRequest,
+    ) -> Result<PrepareSendLiquidAddressResponse, PrepareSendLiquidAddressError>;
     async fn prepare_receive_payment(
         &self,
-        req: PrepareReceivePaymentRequest<A>,
-    ) -> Result<PrepareReceivePaymentResponse<A>, PrepareReceivePaymentError>;
+        req: PrepareReceivePaymentRequest,
+    ) -> Result<PrepareReceivePaymentResponse, PrepareReceivePaymentError>;
     async fn receive_payment(
         &self,
-        req: ReceivePaymentRequest<A>,
+        req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError>;
     async fn send_bitcoin(
         &self,
-        req: SendBitcoinRequest<A, F>,
-    ) -> Result<SendBitcoinResponse<A, D, F>, SendBitcoinError>;
+        req: SendBitcoinRequest,
+    ) -> Result<SendBitcoinResponse, SendBitcoinError>;
     async fn send_lightning(
         &self,
-        req: SendLightningRequest<A, F>,
-    ) -> Result<SendLightningResponse<A, D, F>, SendLightningError>;
+        req: SendLightningRequest,
+    ) -> Result<SendLightningResponse, SendLightningError>;
     async fn send_lnurl_pay(
         &self,
-        req: SendLnurlPayRequest<A, F>,
-    ) -> Result<SendLnurlPayResponse<A, D, F>, SendLnurlPayError>;
+        req: SendLnurlPayRequest,
+    ) -> Result<SendLnurlPayResponse, SendLnurlPayError>;
     async fn send_liquid_address(
         &self,
-        req: SendLiquidAddressRequest<A, F>,
-    ) -> Result<SendLiquidAddressResponse<A, D, F>, SendLiquidAddressError>;
+        req: SendLiquidAddressRequest,
+    ) -> Result<SendLiquidAddressResponse, SendLiquidAddressError>;
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LightningPaymentRequest<A> {
-    pub min_amount: A,
-    pub max_amount: A,
+pub struct FeeBreakdown {} // TODO: This type may vary across different SDKs.
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LightningPaymentRequest {
+    pub min_amount: MilliSatoshi,
+    pub max_amount: MilliSatoshi,
     pub method: LightningPaymentMethod,
 }
 
@@ -101,6 +92,7 @@ pub enum LightningPaymentMethod {
     Bolt12Offer(Bolt12Offer),
 }
 
+// TODO: Create easier interface for lnurl pay
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LnurlPaymentMethod {
     LnurlPay(LnurlPayRequest),
@@ -108,18 +100,24 @@ pub enum LnurlPaymentMethod {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Payment<A, D, F> {
-    pub amount: A,
+pub struct MilliSatoshi(pub u64); // TODO: This type may vary across different SDKs. It may include assets in liquid for example.
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Payment {
+    pub amount: MilliSatoshi,
     pub created_at: u64,
-    pub fee: A,
-    pub fee_breakdown: F,
+    pub fee: MilliSatoshi,
+    pub fee_breakdown: FeeBreakdown,
     pub id: String,
     pub payment_method: PaymentMethod,
     pub payment_request: String,
     pub payment_type: PaymentType,
     pub status: PaymentState,
-    pub details: D,
+    pub details: PaymentDetails,
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum PaymentDetails {} // TODO: This type may vary across different SDKs.
 
 #[derive(
     Clone, Copy, Debug, Default, Deserialize, Display, EnumString, Eq, Hash, PartialEq, Serialize,
@@ -145,76 +143,69 @@ pub enum PaymentType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PaymentMethodSource<P> {
-    Bip21(Bip21Source<P>),
-    Bip353(Bip353Source<P>),
-    Plain(P),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareReceivePaymentRequest<A> {
-    pub amount: A,
+pub struct PrepareReceivePaymentRequest {
+    pub amount: MilliSatoshi,
     pub receive_method: ReceiveMethod,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareReceivePaymentResponse<A> {
-    pub req: PrepareReceivePaymentRequest<A>,
-    pub fee: A,
-    pub min_payer_amount: A,
-    pub max_payer_amount: A,
+pub struct PrepareReceivePaymentResponse {
+    pub req: PrepareReceivePaymentRequest,
+    pub fee: MilliSatoshi,
+    pub min_payer_amount: MilliSatoshi,
+    pub max_payer_amount: MilliSatoshi,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PrepareSendBitcoinRequest {
-    pub address: PaymentMethodSource<BitcoinPaymentMethod>,
+    pub method: BitcoinPaymentMethod,
     pub fee_rate_sat_per_kw: Option<u32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendBitcoinResponse<A, F> {
+pub struct PrepareSendBitcoinResponse {
     pub req: PrepareSendBitcoinRequest,
-    pub fee: A,
-    pub fee_breakdown: F,
+    pub fee: MilliSatoshi,
+    pub fee_breakdown: FeeBreakdown,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLightningRequest<A> {
-    pub payment_request: PaymentMethodSource<LightningPaymentRequest<A>>,
-    pub amount: A,
+pub struct PrepareSendLightningRequest {
+    pub payment_request: LightningPaymentRequest,
+    pub amount: MilliSatoshi,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLightningResponse<A, F> {
-    pub req: PrepareSendLightningRequest<A>,
-    pub fee: A,
-    pub fee_breakdown: F,
+pub struct PrepareSendLightningResponse {
+    pub req: PrepareSendLightningRequest,
+    pub fee: MilliSatoshi,
+    pub fee_breakdown: FeeBreakdown,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLnurlPayRequest<A> {
-    pub lnurl_pay: PaymentMethodSource<LnurlPaymentMethod>,
-    pub amount: A,
+pub struct PrepareSendLnurlPayRequest {
+    pub lnurl_pay: LnurlPaymentMethod,
+    pub amount: MilliSatoshi,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLnurlPayResponse<A, F> {
-    pub req: PrepareSendLnurlPayRequest<A>,
-    pub fee: A,
-    pub fee_breakdown: F,
+pub struct PrepareSendLnurlPayResponse {
+    pub req: PrepareSendLnurlPayRequest,
+    pub fee: MilliSatoshi,
+    pub fee_breakdown: FeeBreakdown,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLiquidAddressRequest<A> {
-    pub address: PaymentMethodSource<LiquidAddress>,
-    pub amount: Option<A>,
+pub struct PrepareSendLiquidAddressRequest {
+    pub address: LiquidAddress,
+    pub amount: MilliSatoshi,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct PrepareSendLiquidAddressResponse<A, F> {
-    pub req: PrepareSendLiquidAddressRequest<A>,
-    pub fee: A,
-    pub fee_breakdown: F,
+pub struct PrepareSendLiquidAddressResponse {
+    pub req: PrepareSendLiquidAddressRequest,
+    pub fee: MilliSatoshi,
+    pub fee_breakdown: FeeBreakdown,
 }
 
 #[derive(
@@ -229,8 +220,8 @@ pub enum ReceiveMethod {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct ReceivePaymentRequest<A> {
-    pub prepared: PrepareReceivePaymentResponse<A>,
+pub struct ReceivePaymentRequest {
+    pub prepared: PrepareReceivePaymentResponse,
     pub description: Option<String>,
     pub use_description_hash: Option<bool>,
 }
@@ -241,70 +232,70 @@ pub struct ReceivePaymentResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendBitcoinRequest<A, F> {
-    pub prepared: PrepareSendBitcoinResponse<A, F>,
+pub struct SendBitcoinRequest {
+    pub prepared: PrepareSendBitcoinResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendBitcoinResponse<A, D, F> {
-    pub payment: Payment<A, D, F>,
+pub struct SendBitcoinResponse {
+    pub payment: Payment,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLightningRequest<A, F> {
-    pub prepared: PrepareSendLightningResponse<A, F>,
+pub struct SendLightningRequest {
+    pub prepared: PrepareSendLightningResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLightningResponse<A, D, F> {
-    pub payment: Payment<A, D, F>,
+pub struct SendLightningResponse {
+    pub payment: Payment,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLiquidAddressRequest<A, F> {
-    pub prepared: PrepareSendLiquidAddressResponse<A, F>,
+pub struct SendLiquidAddressRequest {
+    pub prepared: PrepareSendLiquidAddressResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLiquidAddressResponse<A, D, F> {
-    pub payment: Payment<A, D, F>,
+pub struct SendLiquidAddressResponse {
+    pub payment: Payment,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLnurlPayRequest<A, F> {
-    pub prepared: PrepareSendLnurlPayResponse<A, F>,
+pub struct SendLnurlPayRequest {
+    pub prepared: PrepareSendLnurlPayResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct SendLnurlPayResponse<A, D, F> {
-    pub result: LnurlPayResult<A, D, F>,
+pub struct SendLnurlPayResponse {
+    pub result: LnurlPayResult,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum LnurlPayResult<A, D, F> {
-    EndpointSuccess(LnurlPaySuccessData<A, D, F>),
-    EndpointError { data: LnurlErrorData },
-    PayError { data: LnurlPayErrorData },
+pub enum LnurlPayResult {
+    EndpointSuccess(LnurlPaySuccessData),
+    EndpointError(LnurlErrorData),
+    PayError(LnurlPayErrorData),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LnurlPaySuccessData<A, D, F> {
-    pub payment: Payment<A, D, F>,
+pub struct LnurlPaySuccessData {
+    pub payment: Payment,
     pub success_action: Option<SuccessActionProcessed>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum SourcedPaymentMethod<A> {
-    Bitcoin(PaymentMethodSource<BitcoinPaymentMethod>),
-    Lightning(PaymentMethodSource<LightningPaymentRequest<A>>),
-    LnurlPay(PaymentMethodSource<LnurlPaymentMethod>),
-    LiquidAddress(PaymentMethodSource<LiquidAddress>),
+pub enum PickedPaymentMethod {
+    Bitcoin(BitcoinPaymentMethod),
+    Lightning(LightningPaymentRequest),
+    LnurlPay(LnurlPaymentMethod),
+    LiquidAddress(LiquidAddress),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum SourcedInputType<A> {
+pub enum PickedInputType {
     LnurlAuth(LnurlAuthRequestData),
-    PaymentMethod(SourcedPaymentMethod<A>),
+    PaymentMethod(PickedPaymentMethod),
     ReceiveRequest(ReceiveRequest),
     Url(String),
 }

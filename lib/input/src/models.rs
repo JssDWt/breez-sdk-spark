@@ -39,22 +39,13 @@ pub struct Bip353 {
 pub struct BitcoinAddress {
     pub address: String,
     pub network: Network,
+    pub source: PaymentRequestSource,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Bolt11Invoice {
     pub bolt11: String,
-    pub network: Network,
-    pub payee_pubkey: String,
-    pub payment_hash: String,
-    pub description: Option<String>,
-    pub description_hash: Option<String>,
-    pub amount_msat: Option<u64>,
-    pub timestamp: u64,
-    pub expiry: u64,
-    pub routing_hints: Vec<Bolt11RouteHint>,
-    pub payment_secret: Vec<u8>,
-    pub min_final_cltv_expiry_delta: u64,
+    pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -82,33 +73,59 @@ pub struct Bolt11RouteHintHop {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Bolt12Invoice {
-    // TODO: Fill fields
-    pub amount_msat: u64,
+    pub invoice: String,
+    pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bolt12InvoiceRequest {}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bolt12Offer {
-    /// String representation of the Bolt12 offer
-    pub offer: String,
-    pub chains: Vec<String>,
-    /// If set, it represents the minimum amount that an invoice must have to be valid for this offer
-    pub min_amount: Option<Amount>,
-    pub description: Option<String>,
-    /// Epoch time from which an invoice should no longer be requested. If None, the offer does not expire.
-    pub absolute_expiry: Option<u64>,
-    pub issuer: Option<String>,
-    /// The public key used by the recipient to sign invoices.
-    pub signing_pubkey: Option<String>,
-    pub paths: Vec<Bolt12OfferBlindedPath>,
+pub struct Bolt12InvoiceRequest {
+    // TODO: Fill fields
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Bolt12OfferBlindedPath {
-    /// For each blinded hop, we store the node ID (pubkey as hex).
     pub blinded_hops: Vec<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DetailedBolt11Invoice {
+    pub amount_msat: Option<u64>,
+    pub description: Option<String>,
+    pub description_hash: Option<String>,
+    pub expiry: u64,
+    pub invoice: Bolt11Invoice,
+    pub min_final_cltv_expiry_delta: u64,
+    pub network: Network,
+    pub payee_pubkey: String,
+    pub payment_hash: String,
+    pub payment_secret: Vec<u8>,
+    pub routing_hints: Vec<Bolt11RouteHint>,
+    pub timestamp: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DetailedBolt12Invoice {
+    // TODO: Fill fields
+    pub amount_msat: u64,
+    pub invoice: Bolt12Invoice,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Bolt12Offer {
+    pub offer: String,
+    pub source: PaymentRequestSource,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct DetailedBolt12Offer {
+    pub absolute_expiry: Option<u64>,
+    pub chains: Vec<String>,
+    pub description: Option<String>,
+    pub issuer: Option<String>,
+    pub min_amount: Option<Amount>,
+    pub offer: Bolt12Offer,
+    pub paths: Vec<Bolt12OfferBlindedPath>,
+    pub signing_pubkey: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -121,6 +138,7 @@ pub struct LightningAddress {
 pub struct LiquidAddress {
     pub address: String,
     pub network: Network,
+    pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -204,16 +222,22 @@ pub enum InputType {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum PaymentRequest {
     Bip21(Bip21),
-    Bip353(Bip353),
-    Plain(PaymentMethod),
+    PaymentMethod(PaymentMethod),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum PaymentRequestSource {
+    Bip21(String),
+    Bip353(String),
+    Plain,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum PaymentMethod {
     BitcoinAddress(BitcoinAddress),
-    Bolt11Invoice(Bolt11Invoice),
-    Bolt12Invoice(Bolt12Invoice),
-    Bolt12Offer(Bolt12Offer),
+    Bolt11Invoice(DetailedBolt11Invoice),
+    Bolt12Invoice(DetailedBolt12Invoice),
+    Bolt12Offer(DetailedBolt12Offer),
     LightningAddress(LightningAddress),
     LiquidAddress(LiquidAddress),
     LnurlPay(LnurlPayRequest),
@@ -257,4 +281,5 @@ pub enum ReceiveRequest {
 pub struct SilentPaymentAddress {
     pub address: String,
     pub network: Network,
+    pub source: PaymentRequestSource,
 }
