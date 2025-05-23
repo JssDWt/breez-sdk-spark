@@ -1,4 +1,4 @@
-use breez_sdk_internal::utils::default_true;
+use crate::utils::default_true;
 use serde::{Deserialize, Serialize};
 
 /// [SuccessAction] where contents are ready to be consumed by the caller

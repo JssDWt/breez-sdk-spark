@@ -1,6 +1,7 @@
-pub mod error;
-pub mod lnurl;
-pub mod model;
+mod error;
+mod lnurl;
+mod model;
+mod utils;
 
 use std::collections::HashMap;
 

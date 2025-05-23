@@ -208,15 +208,12 @@ pub struct PrepareSendLiquidAddressResponse {
     pub fee_breakdown: FeeBreakdown,
 }
 
-#[derive(
-    Clone, Copy, Debug, Default, Deserialize, Display, EnumString, Eq, Hash, PartialEq, Serialize,
-)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum ReceiveMethod {
     BitcoinAddress,
-    #[default]
     Bolt11Invoice,
     Bolt12Offer,
+    ReceiveRequest(ReceiveRequest),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
