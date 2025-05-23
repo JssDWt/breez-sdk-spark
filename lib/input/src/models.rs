@@ -226,10 +226,9 @@ pub enum PaymentRequest {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PaymentRequestSource {
-    Bip21(String),
-    Bip353(String),
-    Plain,
+pub struct PaymentRequestSource {
+    pub bip_21_uri: Option<String>,
+    pub bip_353_address: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
