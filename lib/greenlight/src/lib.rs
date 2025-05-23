@@ -26,7 +26,10 @@ pub struct Greenlight {}
 
 #[async_trait]
 impl BreezServices<Millisatoshi, PaymentDetails, FeeBreakdown> for Greenlight {
-    async fn parse_and_pick(&self, input: &str) -> Result<SourcedInputType<Millisatoshi>, ParseAndPickError> {
+    async fn parse_and_pick(
+        &self,
+        input: &str,
+    ) -> Result<SourcedInputType<Millisatoshi>, ParseAndPickError> {
         todo!()
     }
     async fn pick_payment_method(
@@ -38,25 +41,31 @@ impl BreezServices<Millisatoshi, PaymentDetails, FeeBreakdown> for Greenlight {
     async fn prepare_send_bitcoin(
         &self,
         req: PrepareSendBitcoinRequest,
-    ) -> Result<PrepareSendBitcoinResponse<Millisatoshi, FeeBreakdown>, PrepareSendBitcoinError> {
+    ) -> Result<PrepareSendBitcoinResponse<Millisatoshi, FeeBreakdown>, PrepareSendBitcoinError>
+    {
         todo!()
     }
     async fn prepare_send_lightning(
         &self,
         req: PrepareSendLightningRequest<Millisatoshi>,
-    ) -> Result<PrepareSendLightningResponse<Millisatoshi, FeeBreakdown>, PrepareSendLightningError> {
+    ) -> Result<PrepareSendLightningResponse<Millisatoshi, FeeBreakdown>, PrepareSendLightningError>
+    {
         todo!()
     }
     async fn prepare_send_lnurl_pay(
         &self,
         req: PrepareSendLnurlPayRequest<Millisatoshi>,
-    ) -> Result<PrepareSendLnurlPayResponse<Millisatoshi, FeeBreakdown>, PrepareSendLnurlPayError> {
+    ) -> Result<PrepareSendLnurlPayResponse<Millisatoshi, FeeBreakdown>, PrepareSendLnurlPayError>
+    {
         todo!()
     }
     async fn prepare_send_liquid_address(
         &self,
         req: PrepareSendLiquidAddressRequest<Millisatoshi>,
-    ) -> Result<PrepareSendLiquidAddressResponse<Millisatoshi, FeeBreakdown>, PrepareSendLiquidAddressError> {
+    ) -> Result<
+        PrepareSendLiquidAddressResponse<Millisatoshi, FeeBreakdown>,
+        PrepareSendLiquidAddressError,
+    > {
         todo!()
     }
     async fn prepare_receive_payment(
@@ -74,25 +83,31 @@ impl BreezServices<Millisatoshi, PaymentDetails, FeeBreakdown> for Greenlight {
     async fn send_bitcoin(
         &self,
         req: SendBitcoinRequest<Millisatoshi, FeeBreakdown>,
-    ) -> Result<SendBitcoinResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendBitcoinError> {
+    ) -> Result<SendBitcoinResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendBitcoinError>
+    {
         todo!()
     }
     async fn send_lightning(
         &self,
         req: SendLightningRequest<Millisatoshi, FeeBreakdown>,
-    ) -> Result<SendLightningResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendLightningError> {
+    ) -> Result<SendLightningResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendLightningError>
+    {
         todo!()
     }
     async fn send_lnurl_pay(
         &self,
         req: SendLnurlPayRequest<Millisatoshi, FeeBreakdown>,
-    ) -> Result<SendLnurlPayResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendLnurlPayError> {
+    ) -> Result<SendLnurlPayResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendLnurlPayError>
+    {
         todo!()
     }
     async fn send_liquid_address(
         &self,
         req: SendLiquidAddressRequest<Millisatoshi, FeeBreakdown>,
-    ) -> Result<SendLiquidAddressResponse<Millisatoshi, PaymentDetails, FeeBreakdown>, SendLiquidAddressError> {
+    ) -> Result<
+        SendLiquidAddressResponse<Millisatoshi, PaymentDetails, FeeBreakdown>,
+        SendLiquidAddressError,
+    > {
         todo!()
     }
 }

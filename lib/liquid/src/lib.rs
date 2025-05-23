@@ -9,10 +9,7 @@ use serde::{Deserialize, Serialize};
 pub enum Amount {
     Bitcoin(u64),
 
-    Asset {
-        asset_id: String,
-        amount: u64,
-    },
+    Asset { asset_id: String, amount: u64 },
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum FeeBreakdown {}
@@ -32,7 +29,10 @@ pub struct Liquid {}
 
 #[async_trait]
 impl BreezServices<Amount, PaymentDetails, FeeBreakdown> for Liquid {
-    async fn parse_and_pick(&self, input: &str) -> Result<SourcedInputType<Amount>, ParseAndPickError> {
+    async fn parse_and_pick(
+        &self,
+        input: &str,
+    ) -> Result<SourcedInputType<Amount>, ParseAndPickError> {
         todo!()
     }
     async fn pick_payment_method(
@@ -62,7 +62,8 @@ impl BreezServices<Amount, PaymentDetails, FeeBreakdown> for Liquid {
     async fn prepare_send_liquid_address(
         &self,
         req: PrepareSendLiquidAddressRequest<Amount>,
-    ) -> Result<PrepareSendLiquidAddressResponse<Amount, FeeBreakdown>, PrepareSendLiquidAddressError> {
+    ) -> Result<PrepareSendLiquidAddressResponse<Amount, FeeBreakdown>, PrepareSendLiquidAddressError>
+    {
         todo!()
     }
     async fn prepare_receive_payment(
@@ -86,7 +87,8 @@ impl BreezServices<Amount, PaymentDetails, FeeBreakdown> for Liquid {
     async fn send_lightning(
         &self,
         req: SendLightningRequest<Amount, FeeBreakdown>,
-    ) -> Result<SendLightningResponse<Amount, PaymentDetails, FeeBreakdown>, SendLightningError> {
+    ) -> Result<SendLightningResponse<Amount, PaymentDetails, FeeBreakdown>, SendLightningError>
+    {
         todo!()
     }
     async fn send_lnurl_pay(
@@ -98,7 +100,10 @@ impl BreezServices<Amount, PaymentDetails, FeeBreakdown> for Liquid {
     async fn send_liquid_address(
         &self,
         req: SendLiquidAddressRequest<Amount, FeeBreakdown>,
-    ) -> Result<SendLiquidAddressResponse<Amount, PaymentDetails, FeeBreakdown>, SendLiquidAddressError> {
+    ) -> Result<
+        SendLiquidAddressResponse<Amount, PaymentDetails, FeeBreakdown>,
+        SendLiquidAddressError,
+    > {
         todo!()
     }
 }

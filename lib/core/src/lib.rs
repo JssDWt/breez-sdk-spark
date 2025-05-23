@@ -8,8 +8,8 @@ use breez_sdk_input::{
     Bip21, Bip353, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, InputType, PaymentMethod,
     PaymentMethodType, PaymentRequest,
 };
-use error::{ParseAndPickError, PickPaymentMethodError};
 use breez_sdk_internal::utils::Arc;
+use error::{ParseAndPickError, PickPaymentMethodError};
 
 use model::*;
 
