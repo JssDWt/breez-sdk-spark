@@ -6,11 +6,11 @@ version.workspace = true
 [dependencies]
 async-trait = { workspace = true }
 bitcoin = { workspace = true }
-breez-sdk-input = { workspace = true }
 breez-sdk-macros = { workspace = true }
 lightning = { workspace = true }
 reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 strum = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 tracing = { workspace = true }

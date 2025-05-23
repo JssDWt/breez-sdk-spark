@@ -272,24 +272,15 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bitcoin",
- "breez-sdk-input",
  "breez-sdk-macros",
  "lightning",
  "maybe-sync",
  "reqwest",
  "serde",
+ "serde_json",
  "strum",
  "thiserror 2.0.12",
  "tracing",
-]
-
-[[package]]
-name = "breez-sdk-input"
-version = "0.1.0"
-dependencies = [
- "bitcoin",
- "serde",
- "strum_macros",
 ]
 
 [[package]]

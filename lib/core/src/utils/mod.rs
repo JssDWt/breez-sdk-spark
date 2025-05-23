@@ -1,3 +1,5 @@
+mod rest_client;
+
 #[macro_export]
 macro_rules! ensure_sdk {
     ($cond:expr, $err:expr) => {
@@ -15,3 +17,5 @@ pub fn default_true() -> bool {
 pub use std::rc::Rc as Arc;
 #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
 pub use std::sync::Arc;
+
+pub use rest_client::{ReqwestRestClient, RestClient};

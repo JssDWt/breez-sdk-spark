@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::network::Network;
+use super::network::Network;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Amount {
@@ -22,7 +22,7 @@ pub enum Amount {
 pub struct Bip21 {
     pub amount_sat: Option<u64>,
     pub asset_id: Option<String>,
-    pub bip_21: String,
+    pub uri: String,
     pub extras: HashMap<String, String>,
     pub label: Option<String>,
     pub message: Option<String>,

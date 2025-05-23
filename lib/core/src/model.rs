@@ -1,4 +1,4 @@
-use breez_sdk_input::{
+use crate::input::{
     BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
     LnurlAuthRequestData, LnurlPayRequest, PaymentMethod, PaymentRequest, ReceiveRequest,
     SilentPaymentAddress,

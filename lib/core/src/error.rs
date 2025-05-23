@@ -1,4 +1,4 @@
-use breez_sdk_input::ParseError;
+use crate::input::ParseError;
 
 use std::fmt;
 use thiserror::Error;
