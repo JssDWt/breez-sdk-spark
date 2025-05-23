@@ -1,9 +1,9 @@
 pub type ParseResult<T> = Result<T, ParseError>;
 
-pub struct LnUrlErrorData {
+pub struct LnurlErrorData {
     pub reason: String,
 }
 
 pub enum ParseError {
-    LnUrlError(LnUrlErrorData),
+    LnurlError(LnurlErrorData),
 }

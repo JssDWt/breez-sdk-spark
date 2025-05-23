@@ -1,19 +1,24 @@
 mod error;
+mod lnurl;
 mod models;
 
-use std::{collections::HashMap, sync::Arc};
+use breez_sdk_internal::utils::Arc;
+use std::collections::HashMap;
 
 use breez_sdk_internal::BreezServicesImpl;
 use error::{
     ParseAndPickError, PickPaymentMethodError, PrepareSendBitcoinError, PrepareSendLightningError,
-    PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
+    PrepareSendLiquidAddressError, PrepareSendLnurlPayError, SendBitcoinError, SendLightningError,
+    SendLiquidAddressError, SendLnurlPayError,
 };
 use models::{
-    Bip21Source, Bip353Source, BitcoinPaymentMethod, LightningPaymentMethod, LnurlPaymentMethod,
-    PaymentMethodSource, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
-    PrepareSendLightningRequest, PrepareSendLightningResponse, PrepareSendLiquidAddressRequest,
-    PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
-    SourcedInputType, SourcedPaymentMethod,
+    Bip21Source, Bip353Source, BitcoinPaymentMethod, LightningPaymentMethod,
+    LightningPaymentRequest, LnurlPaymentMethod, PaymentMethodSource, PrepareSendBitcoinRequest,
+    PrepareSendBitcoinResponse, PrepareSendLightningRequest, PrepareSendLightningResponse,
+    PrepareSendLiquidAddressRequest, PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest,
+    PrepareSendLnurlPayResponse, SendBitcoinRequest, SendBitcoinResponse, SendLightningRequest,
+    SendLightningResponse, SendLiquidAddressRequest, SendLiquidAddressResponse,
+    SendLnurlPayRequest, SendLnurlPayResponse, SourcedInputType, SourcedPaymentMethod,
 };
 
 pub use breez_sdk_input::*;
@@ -57,6 +62,7 @@ impl<B> BreezServices<B>
 where
     B: BreezServicesImpl,
 {
+    /// Parses the input string and picks a payment method based on the supported payment methods.
     pub async fn parse_and_pick(&self, input: &str) -> Result<SourcedInputType, ParseAndPickError> {
         let input = breez_sdk_input::parse(input).await?;
         Ok(match input {
@@ -114,6 +120,34 @@ where
     ) -> Result<PrepareSendLiquidAddressResponse, PrepareSendLiquidAddressError> {
         todo!()
     }
+
+    pub async fn send_bitcoin(
+        &self,
+        req: SendBitcoinRequest,
+    ) -> Result<SendBitcoinResponse, SendBitcoinError> {
+        todo!()
+    }
+
+    pub async fn send_lightning(
+        &self,
+        req: SendLightningRequest,
+    ) -> Result<SendLightningResponse, SendLightningError> {
+        todo!()
+    }
+
+    pub async fn send_lnurl_pay(
+        &self,
+        req: SendLnurlPayRequest,
+    ) -> Result<SendLnurlPayResponse, SendLnurlPayError> {
+        todo!()
+    }
+
+    pub async fn send_liquid_address(
+        &self,
+        req: SendLiquidAddressRequest,
+    ) -> Result<SendLiquidAddressResponse, SendLiquidAddressError> {
+        todo!()
+    }
 }
 
 impl<B> BreezServices<B>
@@ -151,7 +185,7 @@ where
                 PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
                     SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: LightningPaymentMethod::Bolt11Invoice(
+                        payment_method: bolt11_invoice_to_lightning_payment_request(
                             bolt11_invoice.clone(),
                         ),
                     }))
@@ -159,7 +193,7 @@ where
                 PaymentMethod::Bolt12Invoice(bolt12_invoice) => {
                     SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: LightningPaymentMethod::Bolt12Invoice(
+                        payment_method: bolt12_invoice_to_lightning_payment_request(
                             bolt12_invoice.clone(),
                         ),
                     }))
@@ -167,7 +201,9 @@ where
                 PaymentMethod::Bolt12Offer(bolt12_offer) => {
                     SourcedPaymentMethod::Lightning(PaymentMethodSource::Bip21(Bip21Source {
                         bip_21_uri: bip_21.bip_21,
-                        payment_method: LightningPaymentMethod::Bolt12Offer(bolt12_offer.clone()),
+                        payment_method: bolt12_offer_to_lightning_payment_request(
+                            bolt12_offer.clone(),
+                        ),
                     }))
                 }
                 PaymentMethod::LightningAddress(lightning_address) => {
@@ -240,7 +276,7 @@ where
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: LightningPaymentMethod::Bolt11Invoice(
+                            payment_method: bolt11_invoice_to_lightning_payment_request(
                                 bolt11_invoice.clone(),
                             ),
                         },
@@ -251,7 +287,7 @@ where
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: LightningPaymentMethod::Bolt12Invoice(
+                            payment_method: bolt12_invoice_to_lightning_payment_request(
                                 bolt12_invoice.clone(),
                             ),
                         },
@@ -262,7 +298,7 @@ where
                         bip_353_uri: bip_353.address,
                         bip_21: Bip21Source {
                             bip_21_uri: bip_353.bip_21.bip_21,
-                            payment_method: LightningPaymentMethod::Bolt12Offer(
+                            payment_method: bolt12_offer_to_lightning_payment_request(
                                 bolt12_offer.clone(),
                             ),
                         },
@@ -312,5 +348,33 @@ where
         }
 
         Err(PickPaymentMethodError::Unsupported)
+    }
+}
+
+fn bolt11_invoice_to_lightning_payment_request(
+    bolt11_invoice: Bolt11Invoice,
+) -> LightningPaymentRequest {
+    LightningPaymentRequest {
+        min_amount_msat: bolt11_invoice.amount_msat.unwrap_or(0),
+        max_amount_msat: bolt11_invoice.amount_msat.unwrap_or(u64::MAX),
+        method: LightningPaymentMethod::Bolt11Invoice(bolt11_invoice),
+    }
+}
+
+fn bolt12_invoice_to_lightning_payment_request(
+    bolt12_invoice: Bolt12Invoice,
+) -> LightningPaymentRequest {
+    LightningPaymentRequest {
+        min_amount_msat: bolt12_invoice.amount_msat,
+        max_amount_msat: bolt12_invoice.amount_msat,
+        method: LightningPaymentMethod::Bolt12Invoice(bolt12_invoice),
+    }
+}
+
+fn bolt12_offer_to_lightning_payment_request(bolt12_offer: Bolt12Offer) -> LightningPaymentRequest {
+    LightningPaymentRequest {
+        min_amount_msat: 0,        // TODO: Set min amount to minimum payable amount.
+        max_amount_msat: u64::MAX, // TODO: Set max amount to balance.
+        method: LightningPaymentMethod::Bolt12Offer(bolt12_offer),
     }
 }

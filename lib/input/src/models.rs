@@ -81,7 +81,10 @@ pub struct Bolt11RouteHintHop {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bolt12Invoice {}
+pub struct Bolt12Invoice {
+    // TODO: Fill fields
+    pub amount_msat: u64,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Bolt12InvoiceRequest {}

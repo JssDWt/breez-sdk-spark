@@ -4,10 +4,23 @@ edition = "2024"
 version.workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
+bitcoin = { workspace = true }
 breez-sdk-input = { workspace = true }
 breez-sdk-internal = { workspace = true }
+breez-sdk-macros = { workspace = true }
 lightning = { workspace = true }
+reqwest = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+strum = { version = "0.27.1", features = ["derive"] }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
+maybe-sync = { workspace = true, features = ["sync"] }
+
+[target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
+maybe-sync = { workspace = true }
 
 [lints]
 workspace = true
