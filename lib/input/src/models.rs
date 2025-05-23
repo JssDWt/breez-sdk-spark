@@ -197,7 +197,7 @@ pub struct LnurlWithdrawRequestData {
 pub enum InputType {
     LnurlAuth(LnurlAuthRequestData),
     PaymentRequest(PaymentRequest),
-    ReceiveMethod(ReceiveMethod),
+    ReceiveRequest(ReceiveRequest),
     Url(String),
 }
 
@@ -248,7 +248,7 @@ pub enum PaymentMethodType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum ReceiveMethod {
+pub enum ReceiveRequest {
     Bolt12InvoiceRequest(Bolt12InvoiceRequest),
     LnurlWithdraw(LnurlWithdrawRequestData),
 }

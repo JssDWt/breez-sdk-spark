@@ -88,7 +88,8 @@ pub enum PrepareSendBitcoinError {
 pub enum PrepareSendLightningError {}
 pub enum PrepareSendLiquidAddressError {}
 pub enum PrepareSendLnurlPayError {}
-
+pub enum PrepareReceivePaymentError {}
+pub enum ReceivePaymentError {}
 pub enum SendBitcoinError {}
 pub enum SendLightningError {}
 pub enum SendLiquidAddressError {}
