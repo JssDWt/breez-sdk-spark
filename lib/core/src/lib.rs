@@ -1,6 +1,6 @@
+mod dns_resolver;
 mod error;
 mod input;
-mod lnurl;
 mod model;
 mod utils;
 
@@ -125,3 +125,6 @@ impl BreezServicesCore {
         Err(PickPaymentMethodError::Unsupported)
     }
 }
+
+#[cfg(test)]
+mod test_utils;

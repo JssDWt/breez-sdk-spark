@@ -30,12 +30,6 @@ pub struct Bip21 {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct Bip353 {
-    pub address: String,
-    pub bip_21: Bip21,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BitcoinAddress {
     pub address: String,
     pub network: Network,
@@ -64,7 +58,7 @@ pub struct Bolt11RouteHintHop {
     pub fees_proportional_millionths: u32,
 
     /// The difference in CLTV values between this node and the next node.
-    pub cltv_expiry_delta: u64,
+    pub cltv_expiry_delta: u16,
     /// The minimum value, in msat, which must be relayed to the next hop.
     pub htlc_minimum_msat: Option<u64>,
     /// The maximum value in msat available for routing with a single HTLC.
@@ -98,7 +92,7 @@ pub struct DetailedBolt11Invoice {
     pub network: Network,
     pub payee_pubkey: String,
     pub payment_hash: String,
-    pub payment_secret: Vec<u8>,
+    pub payment_secret: String,
     pub routing_hints: Vec<Bolt11RouteHint>,
     pub timestamp: u64,
 }
@@ -159,6 +153,13 @@ pub struct LnurlAuthRequestData {
     #[serde(skip_serializing, skip_deserializing)]
     pub url: String,
 }
+
+/// Wrapped in a [LnUrlError], this represents a LNURL-endpoint error.
+#[derive(Clone, Deserialize, Debug, Serialize)]
+pub struct LnurlErrorData {
+    pub reason: String,
+}
+
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -225,7 +226,7 @@ pub enum PaymentRequest {
     PaymentMethod(PaymentMethod),
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct PaymentRequestSource {
     pub bip_21_uri: Option<String>,
     pub bip_353_address: Option<String>,
