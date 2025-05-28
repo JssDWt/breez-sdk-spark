@@ -1,72 +1,15 @@
 use breez_sdk_common::input::{
     BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
-    LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, PaymentRequest,
-    ReceiveRequest, SilentPaymentAddress, SuccessActionProcessed,
+    LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, ReceiveRequest,
+    SilentPaymentAddress, SuccessActionProcessed,
 };
-use breez_sdk_macros::async_trait;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
-
-use crate::error::{
-    ParseAndPickError, PickPaymentMethodError, PrepareReceivePaymentError, PrepareSendBitcoinError,
-    PrepareSendLightningError, PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
-    ReceivePaymentError, SendBitcoinError, SendLightningError, SendLiquidAddressError,
-    SendLnurlPayError,
-};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum BitcoinPaymentMethod {
     BitcoinAddress(BitcoinAddress),
     SilentPaymentAddress(SilentPaymentAddress),
-}
-
-#[breez_sdk_macros::async_trait]
-pub trait BreezServices {
-    async fn parse_and_pick(&self, input: &str) -> Result<PickedInputType, ParseAndPickError>;
-    async fn pick_payment_method(
-        &self,
-        payment_request: PaymentRequest,
-    ) -> Result<PickedPaymentMethod, PickPaymentMethodError>;
-    async fn prepare_send_bitcoin(
-        &self,
-        req: PrepareSendBitcoinRequest,
-    ) -> Result<PrepareSendBitcoinResponse, PrepareSendBitcoinError>;
-    async fn prepare_send_lightning(
-        &self,
-        req: PrepareSendLightningRequest,
-    ) -> Result<PrepareSendLightningResponse, PrepareSendLightningError>;
-    async fn prepare_send_lnurl_pay(
-        &self,
-        req: PrepareSendLnurlPayRequest,
-    ) -> Result<PrepareSendLnurlPayResponse, PrepareSendLnurlPayError>;
-    async fn prepare_send_liquid_address(
-        &self,
-        req: PrepareSendLiquidAddressRequest,
-    ) -> Result<PrepareSendLiquidAddressResponse, PrepareSendLiquidAddressError>;
-    async fn prepare_receive_payment(
-        &self,
-        req: PrepareReceivePaymentRequest,
-    ) -> Result<PrepareReceivePaymentResponse, PrepareReceivePaymentError>;
-    async fn receive_payment(
-        &self,
-        req: ReceivePaymentRequest,
-    ) -> Result<ReceivePaymentResponse, ReceivePaymentError>;
-    async fn send_bitcoin(
-        &self,
-        req: SendBitcoinRequest,
-    ) -> Result<SendBitcoinResponse, SendBitcoinError>;
-    async fn send_lightning(
-        &self,
-        req: SendLightningRequest,
-    ) -> Result<SendLightningResponse, SendLightningError>;
-    async fn send_lnurl_pay(
-        &self,
-        req: SendLnurlPayRequest,
-    ) -> Result<SendLnurlPayResponse, SendLnurlPayError>;
-    async fn send_liquid_address(
-        &self,
-        req: SendLiquidAddressRequest,
-    ) -> Result<SendLiquidAddressResponse, SendLiquidAddressError>;
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
