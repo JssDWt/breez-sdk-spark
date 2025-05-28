@@ -3,8 +3,26 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::network::Network;
+use crate::utils::default_true;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+/// Wrapper for the decrypted [AesSuccessActionData] payload
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct AesSuccessActionDataDecrypted {
+    /// Contents description, up to 144 characters
+    pub description: String,
+
+    /// Decrypted content
+    pub plaintext: String,
+}
+
+/// Result of decryption of [AesSuccessActionData] payload
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum AesSuccessActionDataResult {
+    Decrypted { data: AesSuccessActionDataDecrypted },
+    ErrorStatus { reason: String },
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub enum Amount {
     Bitcoin {
         amount_msat: u64,
@@ -18,12 +36,12 @@ pub enum Amount {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct Bip21 {
     pub amount_sat: Option<u64>,
     pub asset_id: Option<String>,
     pub uri: String,
-    pub extras: HashMap<String, String>,
+    pub extras: Vec<(String, String)>,
     pub label: Option<String>,
     pub message: Option<String>,
     pub payment_methods: Vec<PaymentMethod>,
@@ -123,6 +141,14 @@ pub struct DetailedBolt12Offer {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum InputType {
+    LnurlAuth(LnurlAuthRequestData),
+    PaymentRequest(PaymentRequest),
+    ReceiveRequest(ReceiveRequest),
+    Url(String),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LightningAddress {
     pub address: String,
     pub pay_request: LnurlPayRequest,
@@ -159,7 +185,6 @@ pub struct LnurlAuthRequestData {
 pub struct LnurlErrorData {
     pub reason: String,
 }
-
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -212,12 +237,9 @@ pub struct LnurlWithdrawRequestData {
     pub max_withdrawable: u64,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum InputType {
-    LnurlAuth(LnurlAuthRequestData),
-    PaymentRequest(PaymentRequest),
-    ReceiveRequest(ReceiveRequest),
-    Url(String),
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct MessageSuccessActionData {
+    pub message: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -282,4 +304,36 @@ pub struct SilentPaymentAddress {
     pub address: String,
     pub network: Network,
     pub source: PaymentRequestSource,
+}
+
+/// [SuccessAction] where contents are ready to be consumed by the caller
+///
+/// Contents are identical to [SuccessAction], except for AES where the ciphertext is decrypted.
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum SuccessActionProcessed {
+    /// See [SuccessAction::Aes] for received payload
+    ///
+    /// See [AesSuccessActionDataDecrypted] for decrypted payload
+    Aes { result: AesSuccessActionDataResult },
+
+    /// See [SuccessAction::Message]
+    Message { data: MessageSuccessActionData },
+
+    /// See [SuccessAction::Url]
+    Url { data: UrlSuccessActionData },
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub struct UrlSuccessActionData {
+    /// Contents description, up to 144 characters
+    pub description: String,
+
+    /// URL of the success action
+    pub url: String,
+
+    /// Indicates the success URL domain matches the LNURL callback domain.
+    ///
+    /// See <https://github.com/lnurl/luds/blob/luds/09.md>
+    #[serde(default = "default_true")]
+    pub matches_callback_domain: bool,
 }

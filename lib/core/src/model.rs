@@ -1,23 +1,17 @@
 use crate::input::{
     BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
-    LnurlAuthRequestData, LnurlPayRequest, PaymentMethod, PaymentRequest, ReceiveRequest,
-    SilentPaymentAddress,
+    LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, PaymentRequest,
+    ReceiveRequest, SilentPaymentAddress, SuccessActionProcessed,
 };
 use breez_sdk_macros::async_trait;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
-use crate::{
-    error::{
-        ParseAndPickError, PickPaymentMethodError, PrepareReceivePaymentError,
-        PrepareSendBitcoinError, PrepareSendLightningError, PrepareSendLiquidAddressError,
-        PrepareSendLnurlPayError, ReceivePaymentError, SendBitcoinError, SendLightningError,
-        SendLiquidAddressError, SendLnurlPayError,
-    },
-    lnurl::{
-        LnurlErrorData,
-        pay::{LnurlPayErrorData, SuccessActionProcessed},
-    },
+use crate::error::{
+    ParseAndPickError, PickPaymentMethodError, PrepareReceivePaymentError, PrepareSendBitcoinError,
+    PrepareSendLightningError, PrepareSendLiquidAddressError, PrepareSendLnurlPayError,
+    ReceivePaymentError, SendBitcoinError, SendLightningError, SendLiquidAddressError,
+    SendLnurlPayError,
 };
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -266,6 +260,12 @@ pub struct SendLnurlPayRequest {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendLnurlPayResponse {
     pub result: LnurlPayResult,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LnurlPayErrorData {
+    pub payment_hash: String,
+    pub reason: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

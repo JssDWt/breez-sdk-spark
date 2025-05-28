@@ -4,21 +4,24 @@ edition = "2024"
 version.workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
-async-trait = { workspace = true }
-bech32 = { workspace = true }
-bitcoin = { workspace = true }
-breez-sdk-macros = { workspace = true }
-hex = { workspace = true }
-lazy_static = "1.5.0"
-lightning = { workspace = true }
-reqwest = { workspace = true }
+anyhow.workspace = true
+async-trait.workspace = true
+bech32.workspace = true
+bitcoin.workspace = true
+breez-sdk-macros.workspace = true
+hex.workspace = true
+lazy_static.workspace = true
+lightning.workspace = true
+percent-encoding-rfc3986 = "0.1.3"
+reqwest.workspace = true
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
+serde_json.workspace = true
 strum = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
-tracing = { workspace = true }
 tokio = { workspace = true, features = ["sync"] }
+tracing.workspace = true
+
+
 
 [target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
 hickory-resolver = { workspace = true, features = ["dnssec-ring"] }
@@ -26,8 +29,8 @@ maybe-sync = { workspace = true, features = ["sync"] }
 tokio = { workspace = true, features = ["sync", "rt"] }
 
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
-dns-parser = { workspace = true }
-maybe-sync = { workspace = true }
+dns-parser.workspace = true
+maybe-sync.workspace = true
 
 [lints]
 workspace = true

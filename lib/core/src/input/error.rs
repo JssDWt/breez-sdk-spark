@@ -1,6 +1,60 @@
 use thiserror::Error;
 
+use crate::error::ServiceConnectivityError;
+
 pub type ParseResult<T> = Result<T, ParseError>;
+
+#[derive(Debug, Error)]
+pub enum Bip21Error {
+    #[error("bip21 contains invalid address")]
+    InvalidAddress,
+    #[error("bip21 contains invalid amount")]
+    InvalidAmount,
+    #[error("bip21 contains invalid parameter value for '{0}'")]
+    InvalidParameter(String),
+    #[error("bip21 parameter missing equals character")]
+    MissingEquals,
+    #[error("bip21 contains parameter '{0}' multiple times")]
+    MultipleParams(String),
+    #[error("bip21 contains unknown required parameter '{0}'")]
+    UnknownRequiredParameter(String),
+    #[error("bip21 does not contain any payment methods")]
+    NoPaymentMethods,
+}
+
+impl Bip21Error {
+    pub fn invalid_parameter(name: &str) -> Self {
+        Self::InvalidParameter(name.to_string())
+    }
+    pub fn invalid_parameter_func<E>(name: &str) -> impl FnOnce(E) -> Self {
+        |_| Self::invalid_parameter(name)
+    }
+    pub fn multiple_params(name: &str) -> Self {
+        Self::MultipleParams(name.to_string())
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum LnurlError {
+    #[error("lnurl missing k1 parameter")]
+    MissingK1,
+    #[error("lnurl contains invalid k1 parameter")]
+    InvalidK1,
+    #[error("lnurl contains unsupported action")]
+    UnsupportedAction,
+    #[error("lnurl missing domain")]
+    MissingDomain,
+    #[error("error calling lnurl endpoint: {0}")]
+    EndpointError(ServiceConnectivityError),
+    #[error("lnurl has http scheme without onion domain")]
+    HttpSchemeWithoutOnionDomain,
+    #[error("lnurl has https scheme with onion domain")]
+    HttpsSchemeWithOnionDomain,
+    #[error("lnurl error: {0}")]
+    General(String),
+    #[error("lnurl has unknown scheme")]
+    UnknownScheme,
+}
 
 #[derive(Debug)]
 pub struct LnurlErrorData {
@@ -11,8 +65,30 @@ pub struct LnurlErrorData {
 pub enum ParseError {
     #[error("empty input")]
     EmptyInput,
+    #[error("Bip-21 error: {0}")]
+    Bip21Error(Bip21Error),
     #[error("invalid input")]
     InvalidInput,
-    #[error("Lnurl error: {}", .0.reason)]
-    LnurlError(LnurlErrorData),
+    #[error("Lnurl error: {0}")]
+    LnurlError(LnurlError),
+    #[error("Service connectivity error: {0}")]
+    ServiceConnectivity(ServiceConnectivityError),
+}
+
+impl From<Bip21Error> for ParseError {
+    fn from(value: Bip21Error) -> Self {
+        Self::Bip21Error(value)
+    }
+}
+
+impl From<LnurlError> for ParseError {
+    fn from(value: LnurlError) -> Self {
+        Self::LnurlError(value)
+    }
+}
+
+impl From<ServiceConnectivityError> for ParseError {
+    fn from(value: ServiceConnectivityError) -> Self {
+        Self::ServiceConnectivity(value)
+    }
 }

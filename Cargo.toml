@@ -31,6 +31,7 @@ arithmetic_side_effects = "warn"
 anyhow = "1.0.98"
 async-trait = "0.1.88"
 bech32 = "0.11.0"
+bip21 = "0.5.0"
 bitcoin = { version = "0.32.6", default-features = false }
 breez-sdk-core = { path = "lib/core" }
 breez-sdk-macros = { path = "lib/macros" }
