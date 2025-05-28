@@ -8,6 +8,6 @@ use anyhow::Result;
 pub use resolver::Resolver;
 
 #[breez_sdk_macros::async_trait]
-pub(crate) trait DnsResolver {
+pub trait DnsResolver {
     async fn txt_lookup(&self, dns_name: String) -> Result<Vec<String>>;
 }

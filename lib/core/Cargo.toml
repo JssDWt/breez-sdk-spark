@@ -21,8 +21,6 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["sync"] }
 tracing.workspace = true
 
-
-
 [target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
 hickory-resolver = { workspace = true, features = ["dnssec-ring"] }
 maybe-sync = { workspace = true, features = ["sync"] }

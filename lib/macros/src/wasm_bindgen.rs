@@ -48,7 +48,7 @@ fn extern_wasm_bindgen_from(
             output.extend(output_impl);
             additional_definition
         }
-        _ => quote! {
+        Data::Union(_) => quote! {
             #[serde(rename_all = "camelCase")]
         },
     };
