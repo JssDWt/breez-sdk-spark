@@ -173,15 +173,6 @@ where
                         return Err(Bip21Error::multiple_params(key));
                     }
                     "assetid" => bip_21.asset_id = Some(value.to_string()),
-                    "b12" => {
-                        let bolt12_invoice = parse_bolt12_invoice(input, &source);
-                        match bolt12_invoice {
-                            Some(invoice) => bip_21
-                                .payment_methods
-                                .push(PaymentMethod::Bolt12Invoice(invoice)),
-                            None => return Err(Bip21Error::invalid_parameter("b12")),
-                        }
-                    }
                     "bc" => {}
                     "label" if bip_21.label.is_some() => {
                         return Err(Bip21Error::multiple_params(key));
@@ -204,6 +195,15 @@ where
                         match lightning {
                             Some(lightning) => bip_21.payment_methods.push(lightning),
                             None => return Err(Bip21Error::invalid_parameter("lightning")),
+                        }
+                    }
+                    "lno" => {
+                        let bolt12_offer = parse_bolt12_offer(value, &source);
+                        match bolt12_offer {
+                            Some(offer) => bip_21
+                                .payment_methods
+                                .push(PaymentMethod::Bolt12Offer(offer)),
+                            None => return Err(Bip21Error::invalid_parameter("lno")),
                         }
                     }
                     "message" if bip_21.message.is_some() => {
@@ -1145,7 +1145,7 @@ mod tests {
             Ok(InputType::PaymentRequest(PaymentRequest::Bip21(_)))
         ));
 
-        // Address, amount and invoice
+        // Address with amount and invoice
         // BOLT11 is not the first URI arg (preceded by '&')
         let result = input_parser
             .parse(&format!(
@@ -1285,7 +1285,7 @@ mod tests {
     #[breez_sdk_macros::async_test_all]
     async fn test_bip353_address() {
         let mock_dns_resolver = MockDnsResolver::new();
-        mock_dns_resolver.add_response(vec![String::from("bitcoin:?sp=sp1qqweplq6ylpfrzuq6hfznzmv28djsraupudz0s0dclyt8erh70pgwxqkz2ydatksrdzf770umsntsmcjp4kcz7jqu03jeszh0gdmpjzmrf5u4zh0c&b12=lno1pqps7sjqpgtyzm3qv4uxzmtsd3jjqer9wd3hy6tsw35k7msjzfpy7nz5yqcnygrfdej82um5wf5k2uckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5xvxg")]);
+        mock_dns_resolver.add_response(vec![String::from("bitcoin:?sp=sp1qqweplq6ylpfrzuq6hfznzmv28djsraupudz0s0dclyt8erh70pgwxqkz2ydatksrdzf770umsntsmcjp4kcz7jqu03jeszh0gdmpjzmrf5u4zh0c&lno=lno1pqps7sjqpgtyzm3qv4uxzmtsd3jjqer9wd3hy6tsw35k7msjzfpy7nz5yqcnygrfdej82um5wf5k2uckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5vxg")]);
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
 
@@ -1303,6 +1303,78 @@ mod tests {
             Ok(_) => assert!(true),
             Err(_) => assert!(true),
         }
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bolt12_offer() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // A valid Bolt12 offer string
+        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
+
+        let result = input_parser.parse(bolt12_offer).await;
+        println!("Debug - bolt12 offer result: {:?}", result);
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
+                PaymentMethod::Bolt12Offer(_)
+            )))
+        ));
+
+        // Test with lightning: prefix
+        let prefixed_bolt12 = format!("lightning:{bolt12_offer}");
+        let result = input_parser.parse(&prefixed_bolt12).await;
+        println!(
+            "Debug - bolt12 offer with lightning prefix result: {:?}",
+            result
+        );
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
+                PaymentMethod::Bolt12Offer(_)
+            )))
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bolt12_offer_in_bip21() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
+
+        // Address with Bolt12 offer parameter
+        let bip21_with_bolt12 = format!("bitcoin:{addr}?lno={bolt12_offer}");
+        let result = input_parser.parse(&bip21_with_bolt12).await;
+        println!("Debug - bip21 with bolt12 offer result: {:?}", result);
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
+        ));
+
+        // Address with amount and Bolt12 offer parameter
+        let bip21_with_amount_bolt12 =
+            format!("bitcoin:{addr}?amount=0.00002000&lno={bolt12_offer}");
+        let result = input_parser.parse(&bip21_with_amount_bolt12).await;
+        println!(
+            "Debug - bip21 with amount and bolt12 offer result: {:?}",
+            result
+        );
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
+            && bip21.amount_sat == Some(2000)
+        ));
     }
 
     // Add more tests as needed for other input types
