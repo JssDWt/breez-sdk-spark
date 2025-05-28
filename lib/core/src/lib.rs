@@ -1,4 +1,4 @@
-mod dns_resolver;
+mod dns;
 mod error;
 mod input;
 mod model;
