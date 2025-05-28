@@ -303,7 +303,6 @@ dependencies = [
 name = "breez-sdk-core"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "breez-sdk-common",
  "breez-sdk-macros",
  "serde",

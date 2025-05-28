@@ -4,7 +4,6 @@ edition = "2024"
 version.workspace = true
 
 [dependencies]
-async-trait.workspace = true
 breez-sdk-common.workspace = true
 breez-sdk-macros.workspace = true
 serde = { workspace = true, features = ["derive"] }
