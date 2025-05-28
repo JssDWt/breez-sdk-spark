@@ -3,7 +3,10 @@ use std::{
     sync::Mutex,
 };
 
-use crate::{error::ServiceConnectivityError, utils::RestClient};
+use crate::{
+    error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
+    utils::RestClient,
+};
 
 #[derive(Debug)]
 pub struct MockResponse {
@@ -39,7 +42,12 @@ impl MockRestClient {
 impl RestClient for MockRestClient {
     async fn get(&self, _url: &str) -> Result<(String, u16), ServiceConnectivityError> {
         let mut responses = self.responses.lock().unwrap();
-        let response = responses.pop_front().unwrap();
+        let response = responses.pop_front().ok_or_else(|| {
+            ServiceConnectivityError::new(
+                ServiceConnectivityErrorKind::Other,
+                String::from("No response available for GET request"),
+            )
+        })?;
         println!("Pop GET response: {response:?}");
         let status = response.status_code;
         let raw_body = response.text;
@@ -54,7 +62,12 @@ impl RestClient for MockRestClient {
         _body: Option<String>,
     ) -> Result<(String, u16), ServiceConnectivityError> {
         let mut responses = self.responses.lock().unwrap();
-        let response = responses.pop_front().unwrap();
+        let response = responses.pop_front().ok_or_else(|| {
+            ServiceConnectivityError::new(
+                ServiceConnectivityErrorKind::Other,
+                String::from("No response available for POST request"),
+            )
+        })?;
         println!("Pop POST response: {response:?}");
         let status = response.status_code;
         let raw_body = response.text;

@@ -822,6 +822,16 @@ mod tests {
     #[cfg(all(target_family = "wasm", target_os = "unknown"))]
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
+    /// BIP21 amounts which can lead to rounding errors.
+    /// The format is: (sat amount, BIP21 BTC amount)
+    fn get_bip21_rounding_test_vectors() -> Vec<(u64, f64)> {
+        vec![
+            (999, 0.0000_0999),
+            (1_000, 0.0000_1000),
+            (59_810, 0.0005_9810),
+        ]
+    }
+
     fn mock_lnurl_pay_endpoint(mock_rest_client: &MockRestClient, error: Option<String>) {
         let response_body = match error {
             None => json!({
@@ -874,45 +884,249 @@ mod tests {
     }
 
     #[breez_sdk_macros::async_test_all]
-    async fn test_generic_invalid_input() {
+    async fn test_bip21_multiple_params() {
         let mock_dns_resolver = MockDnsResolver::new();
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
 
-        let result = input_parser.parse("invalid_input").await;
-        println!("Debug - invalid input result: {:?}", result);
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // Duplicate label parameter
+        let bip21_with_duplicate_label = format!("bitcoin:{addr}?label=first&label=second");
+        let result = input_parser.parse(&bip21_with_duplicate_label).await;
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+
+        // Duplicate message parameter
+        let bip21_with_duplicate_message = format!("bitcoin:{addr}?message=first&message=second");
+        let result = input_parser.parse(&bip21_with_duplicate_message).await;
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+
+        // Duplicate amount parameter
+        let bip21_with_duplicate_amount = format!("bitcoin:{addr}?amount=0.001&amount=0.002");
+        let result = input_parser.parse(&bip21_with_duplicate_amount).await;
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_required_parameter() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with unknown required parameter
+        let bip21_with_req = format!("bitcoin:{addr}?req-unknown=value");
+        let result = input_parser.parse(&bip21_with_req).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+
+        // BIP21 with known required parameter
+        let bip21_with_known_req = format!("bitcoin:{addr}?req-amount=0.001");
+        let result = input_parser.parse(&bip21_with_known_req).await;
 
         assert!(matches!(
             result,
-            Err(crate::input::ParseError::InvalidInput)
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.amount_sat == Some(100_000)
         ));
     }
 
     #[breez_sdk_macros::async_test_all]
-    async fn test_trim_input() {
+    async fn test_bip21_url_encoded_values() {
         let mock_dns_resolver = MockDnsResolver::new();
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
-        for address in [
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd"#,
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd "#,
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
-            r#"
-            1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
-            r#" 1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
-        ] {
-            let result = input_parser.parse(address).await;
-            println!("Debug - trim input result for '{}': {:?}", address, result);
-            assert!(matches!(
-                result,
-                Ok(crate::input::InputType::PaymentRequest(
-                    PaymentRequest::PaymentMethod(PaymentMethod::BitcoinAddress(_))
-                ))
-            ));
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with URL-encoded values
+        let encoded_message = "Hello%20World%21%20%26%20Special%20chars%3A%20%24%25";
+        let bip21_with_encoded = format!("bitcoin:{addr}?message={encoded_message}");
+        let result = input_parser.parse(&bip21_with_encoded).await;
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.message.as_deref() == Some("Hello World! & Special chars: $%")
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_extra_parameters() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with custom parameters
+        let bip21_with_extra = format!("bitcoin:{addr}?amount=0.001&custom=value&another=param");
+        let result = input_parser.parse(&bip21_with_extra).await;
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.extras.len() == 2 &&
+               bip21.extras.contains(&("custom".to_string(), "value".to_string())) &&
+               bip21.extras.contains(&("another".to_string(), "param".to_string()))
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_invalid_amount() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with invalid amount format
+        let bip21_with_invalid_amount = format!("bitcoin:{addr}?amount=invalid");
+        let result = input_parser.parse(&bip21_with_invalid_amount).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_invalid_lightning() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with invalid lightning parameter
+        let bip21_with_invalid_ln = format!("bitcoin:{addr}?lightning=invalidlndata");
+        let result = input_parser.parse(&bip21_with_invalid_ln).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_invalid_message_encoding() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+        // Invalid UTF-8 sequence in message
+        let bip21_with_invalid_message = format!("bitcoin:{addr}?message=%FF%FE%FD");
+        let result = input_parser.parse(&bip21_with_invalid_message).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_invalid_silent_payment() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with invalid silent payment parameter
+        let bip21_with_invalid_sp = format!("bitcoin:{addr}?sp=invalidspaddress");
+        let result = input_parser.parse(&bip21_with_invalid_sp).await;
+
+        assert!(matches!(
+            result,
+            Err(ParseError::Bip21Error(Bip21Error::InvalidParameter(_)))
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_with_missing_equals() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+
+        // BIP21 with parameter missing equals sign
+        let bip21_with_missing_equals = format!("bitcoin:{addr}?labelvalue");
+        let result = input_parser.parse(&bip21_with_missing_equals).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip21_without_payment_methods() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // BIP21 without address or payment methods
+        let bip21_no_methods = "bitcoin:?amount=0.001";
+        let result = input_parser.parse(bip21_no_methods).await;
+
+        assert!(matches!(result, Err(ParseError::Bip21Error(_))));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip353_with_invalid_dns_record() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        // Simulate a TXT record that's not a valid BIP21 URI
+        mock_dns_resolver.add_response(vec![String::from("not-a-valid-bip21-uri")]);
+
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let bip353_address = "test@example.com";
+        let result = input_parser.parse(bip353_address).await;
+
+        // Should fail to parse the BIP353 record and fall back to checking if it's a lightning address
+        assert!(matches!(result, Err(ParseError::InvalidInput)));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip353_address() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        mock_dns_resolver.add_response(vec![String::from("bitcoin:?sp=sp1qqweplq6ylpfrzuq6hfznzmv28djsraupudz0s0dclyt8erh70pgwxqkz2ydatksrdzf770umsntsmcjp4kcz7jqu03jeszh0gdmpjzmrf5u4zh0c&lno=lno1pqps7sjqpgtyzm3qv4uxzmtsd3jjqer9wd3hy6tsw35k7msjzfpy7nz5yqcnygrfdej82um5wf5k2uckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5vxg")]);
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // Test with a BIP-353 address
+        let bip353_address = "user@bitcoin-domain.com";
+
+        // This should be handled by parse_bip_353
+        // Since mocking DNS is complex, we'll just ensure the method exists and is called
+        let result = input_parser.parse(bip353_address).await;
+        println!("Debug - bip353 address result: {:?}", result);
+
+        // The result might be Err if DNS mocking isn't set up
+        // Just check the method exists and runs without crashing
+        match result {
+            Ok(_) => assert!(true),
+            Err(_) => assert!(true),
         }
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bip353_address_too_long() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // Local part longer than 63 chars
+        let too_long_local = "a".repeat(64) + "@example.com";
+        let result = input_parser.parse(&too_long_local).await;
+
+        // Should not be recognized as a BIP353 address
+        assert!(!matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(_)))
+        ));
+
+        // Domain part longer than 63 chars
+        let too_long_domain = format!("user@{}.com", "a".repeat(60));
+        let result = input_parser.parse(&too_long_domain).await;
+
+        // Should not be recognized as a BIP353 address
+        assert!(!matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(_)))
+        ));
     }
 
     #[breez_sdk_macros::async_test_all]
@@ -1022,16 +1236,6 @@ mod tests {
         ));
     }
 
-    /// BIP21 amounts which can lead to rounding errors.
-    /// The format is: (sat amount, BIP21 BTC amount)
-    pub(crate) fn get_bip21_rounding_test_vectors() -> Vec<(u64, f64)> {
-        vec![
-            (999, 0.0000_0999),
-            (1_000, 0.0000_1000),
-            (59_810, 0.0005_9810),
-        ]
-    }
-
     #[breez_sdk_macros::async_test_all]
     async fn test_bitcoin_address_bip21_rounding() {
         let mock_dns_resolver = MockDnsResolver::new();
@@ -1087,7 +1291,7 @@ mod tests {
     }
 
     #[breez_sdk_macros::async_test_all]
-    async fn test_capitalized_bolt11() {
+    async fn test_bolt11_capitalized() {
         let mock_dns_resolver = MockDnsResolver::new();
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
@@ -1159,6 +1363,121 @@ mod tests {
         assert!(matches!(
             result,
             Ok(InputType::PaymentRequest(PaymentRequest::Bip21(_)))
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bolt12_invoice() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // Note: This is a placeholder - you'd need a real Bolt12 invoice string
+        let bolt12_invoice = "lni1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
+
+        // Currently this should return an error as parse_bolt12_invoice returns None
+        let result = input_parser.parse(bolt12_invoice).await;
+        assert!(matches!(result, Err(ParseError::InvalidInput)));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bolt12_offer() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        // A valid Bolt12 offer string
+        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
+
+        let result = input_parser.parse(bolt12_offer).await;
+        println!("Debug - bolt12 offer result: {:?}", result);
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
+                PaymentMethod::Bolt12Offer(_)
+            )))
+        ));
+
+        // Test with lightning: prefix
+        let prefixed_bolt12 = format!("lightning:{bolt12_offer}");
+        let result = input_parser.parse(&prefixed_bolt12).await;
+        println!(
+            "Debug - bolt12 offer with lightning prefix result: {:?}",
+            result
+        );
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
+                PaymentMethod::Bolt12Offer(_)
+            )))
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_bolt12_offer_in_bip21() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
+        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
+
+        // Address with Bolt12 offer parameter
+        let bip21_with_bolt12 = format!("bitcoin:{addr}?lno={bolt12_offer}");
+        let result = input_parser.parse(&bip21_with_bolt12).await;
+        println!("Debug - bip21 with bolt12 offer result: {:?}", result);
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
+        ));
+
+        // Address with amount and Bolt12 offer parameter
+        let bip21_with_amount_bolt12 =
+            format!("bitcoin:{addr}?amount=0.00002000&lno={bolt12_offer}");
+        let result = input_parser.parse(&bip21_with_amount_bolt12).await;
+        println!(
+            "Debug - bip21 with amount and bolt12 offer result: {:?}",
+            result
+        );
+
+        assert!(matches!(
+            result,
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
+            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
+            && bip21.amount_sat == Some(2000)
+        ));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_empty_input() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let result = input_parser.parse("").await;
+        assert!(matches!(result, Err(ParseError::EmptyInput)));
+
+        // Test with only whitespace
+        let result = input_parser.parse("   ").await;
+        assert!(matches!(result, Err(ParseError::EmptyInput)));
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_generic_invalid_input() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+
+        let result = input_parser.parse("invalid_input").await;
+        println!("Debug - invalid input result: {:?}", result);
+
+        assert!(matches!(
+            result,
+            Err(crate::input::ParseError::InvalidInput)
         ));
     }
 
@@ -1238,23 +1557,6 @@ mod tests {
     }
 
     #[breez_sdk_macros::async_test_all]
-    async fn test_lnurl_withdraw() {
-        let mock_dns_resolver = MockDnsResolver::new();
-        let mock_rest_client = MockRestClient::new();
-        mock_lnurl_withdraw_endpoint(&mock_rest_client, None);
-
-        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
-        let lnurl_withdraw_encoded = "lnurl1dp68gurn8ghj7mr0vdskc6r0wd6z7mrww4exctthd96xserjv9mn7um9wdekjmmw843xxwpexdnxzen9vgunsvfexq6rvdecx93rgdmyxcuxverrvcursenpxvukzv3c8qunsdecx33nzwpnvg6ryc3hv93nzvecxgcxgwp3h33lxk";
-
-        // Should be handled by parse_lnurl method, recognizing it as a withdraw request
-        let result = input_parser.parse(lnurl_withdraw_encoded).await;
-        println!("Debug - lnurl withdraw result: {:?}", result);
-
-        // Verify LNURL-withdraw parsing works
-        assert!(result.is_ok());
-    }
-
-    #[breez_sdk_macros::async_test_all]
     async fn test_lnurl_prefixed_schemes() {
         let mock_dns_resolver = MockDnsResolver::new();
         let mock_rest_client = MockRestClient::new();
@@ -1283,99 +1585,58 @@ mod tests {
     }
 
     #[breez_sdk_macros::async_test_all]
-    async fn test_bip353_address() {
+    async fn test_lnurl_withdraw() {
         let mock_dns_resolver = MockDnsResolver::new();
-        mock_dns_resolver.add_response(vec![String::from("bitcoin:?sp=sp1qqweplq6ylpfrzuq6hfznzmv28djsraupudz0s0dclyt8erh70pgwxqkz2ydatksrdzf770umsntsmcjp4kcz7jqu03jeszh0gdmpjzmrf5u4zh0c&lno=lno1pqps7sjqpgtyzm3qv4uxzmtsd3jjqer9wd3hy6tsw35k7msjzfpy7nz5yqcnygrfdej82um5wf5k2uckyypwa3eyt44h6txtxquqh7lz5djge4afgfjn7k4rgrkuag0jsd5vxg")]);
+        let mock_rest_client = MockRestClient::new();
+        mock_lnurl_withdraw_endpoint(&mock_rest_client, None);
+
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+        let lnurl_withdraw_encoded = "lnurl1dp68gurn8ghj7mr0vdskc6r0wd6z7mrww4exctthd96xserjv9mn7um9wdekjmmw843xxwpexdnxzen9vgunsvfexq6rvdecx93rgdmyxcuxverrvcursenpxvukzv3c8qunsdecx33nzwpnvg6ryc3hv93nzvecxgcxgwp3h33lxk";
+
+        // Should be handled by parse_lnurl method, recognizing it as a withdraw request
+        let result = input_parser.parse(lnurl_withdraw_encoded).await;
+        println!("Debug - lnurl withdraw result: {:?}", result);
+
+        // Verify LNURL-withdraw parsing works
+        assert!(result.is_ok());
+    }
+
+    #[breez_sdk_macros::async_test_all]
+    async fn test_invalid_bitcoin_address() {
+        let mock_dns_resolver = MockDnsResolver::new();
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
 
-        // Test with a BIP-353 address
-        let bip353_address = "user@bitcoin-domain.com";
+        // Modify valid address to make it invalid
+        let invalid_addr = "1andreas3batLhQa2FawWjeyjCqyBzyp";
+        let result = input_parser.parse(invalid_addr).await;
+        assert!(matches!(result, Err(ParseError::InvalidInput)));
+    }
 
-        // This should be handled by parse_bip_353
-        // Since mocking DNS is complex, we'll just ensure the method exists and is called
-        let result = input_parser.parse(bip353_address).await;
-        println!("Debug - bip353 address result: {:?}", result);
-
-        // The result might be Err if DNS mocking isn't set up
-        // Just check the method exists and runs without crashing
-        match result {
-            Ok(_) => assert!(true),
-            Err(_) => assert!(true),
+    #[breez_sdk_macros::async_test_all]
+    async fn test_trim_input() {
+        let mock_dns_resolver = MockDnsResolver::new();
+        let mock_rest_client = MockRestClient::new();
+        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
+        for address in [
+            r#"1andreas3batLhQa2FawWjeyjCqyBzypd"#,
+            r#"1andreas3batLhQa2FawWjeyjCqyBzypd "#,
+            r#"1andreas3batLhQa2FawWjeyjCqyBzypd
+            "#,
+            r#"
+            1andreas3batLhQa2FawWjeyjCqyBzypd
+            "#,
+            r#" 1andreas3batLhQa2FawWjeyjCqyBzypd
+            "#,
+        ] {
+            let result = input_parser.parse(address).await;
+            println!("Debug - trim input result for '{}': {:?}", address, result);
+            assert!(matches!(
+                result,
+                Ok(crate::input::InputType::PaymentRequest(
+                    PaymentRequest::PaymentMethod(PaymentMethod::BitcoinAddress(_))
+                ))
+            ));
         }
     }
-
-    #[breez_sdk_macros::async_test_all]
-    async fn test_bolt12_offer() {
-        let mock_dns_resolver = MockDnsResolver::new();
-        let mock_rest_client = MockRestClient::new();
-        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
-
-        // A valid Bolt12 offer string
-        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
-
-        let result = input_parser.parse(bolt12_offer).await;
-        println!("Debug - bolt12 offer result: {:?}", result);
-
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
-                PaymentMethod::Bolt12Offer(_)
-            )))
-        ));
-
-        // Test with lightning: prefix
-        let prefixed_bolt12 = format!("lightning:{bolt12_offer}");
-        let result = input_parser.parse(&prefixed_bolt12).await;
-        println!(
-            "Debug - bolt12 offer with lightning prefix result: {:?}",
-            result
-        );
-
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
-                PaymentMethod::Bolt12Offer(_)
-            )))
-        ));
-    }
-
-    #[breez_sdk_macros::async_test_all]
-    async fn test_bolt12_offer_in_bip21() {
-        let mock_dns_resolver = MockDnsResolver::new();
-        let mock_rest_client = MockRestClient::new();
-        let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
-
-        let addr = "1andreas3batLhQa2FawWjeyjCqyBzypd";
-        let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
-
-        // Address with Bolt12 offer parameter
-        let bip21_with_bolt12 = format!("bitcoin:{addr}?lno={bolt12_offer}");
-        let result = input_parser.parse(&bip21_with_bolt12).await;
-        println!("Debug - bip21 with bolt12 offer result: {:?}", result);
-
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
-            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
-        ));
-
-        // Address with amount and Bolt12 offer parameter
-        let bip21_with_amount_bolt12 =
-            format!("bitcoin:{addr}?amount=0.00002000&lno={bolt12_offer}");
-        let result = input_parser.parse(&bip21_with_amount_bolt12).await;
-        println!(
-            "Debug - bip21 with amount and bolt12 offer result: {:?}",
-            result
-        );
-
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
-            if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
-            && bip21.amount_sat == Some(2000)
-        ));
-    }
-
-    // Add more tests as needed for other input types
 }
