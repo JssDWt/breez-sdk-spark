@@ -152,7 +152,7 @@ fn extern_wasm_bindgen_from_struct(
 
 fn get_path(path_args: &PathArguments) -> Option<&TypePath> {
     if let PathArguments::AngleBracketed(bracketed_args) = path_args {
-        for arg in bracketed_args.args.iter() {
+        for arg in &bracketed_args.args {
             if let GenericArgument::Type(ty) = arg {
                 if let Type::Path(path) = ty {
                     return Some(path);
@@ -169,7 +169,7 @@ fn get_path(path_args: &PathArguments) -> Option<&TypePath> {
 
 fn update_data_enum(data_enum: &DataEnum) -> DataEnum {
     let mut data_enum = data_enum.clone();
-    for variant in data_enum.variants.iter_mut() {
+    for variant in &mut data_enum.variants {
         variant.fields = update_data_fields(&variant.fields);
     }
     data_enum
@@ -184,7 +184,7 @@ fn update_data_struct(data_struct: &DataStruct) -> DataStruct {
 fn update_data_fields(fields: &Fields) -> Fields {
     let mut fields = fields.clone();
     if let Fields::Named(ref mut fields) = fields {
-        for field in fields.named.iter_mut() {
+        for field in &mut fields.named {
             if let Type::Path(ref type_path) = field.ty {
                 let segment = &type_path.path.segments[0];
                 if segment.ident == "Option" {
@@ -203,23 +203,20 @@ fn get_struct_fields(fields: &Fields) -> Vec<TokenStream> {
         .iter()
         .filter_map(|field| {
             let ty = &field.ty;
-            field.ident.as_ref().map(|ident| match ty {
-                Type::Path(type_path) => {
-                    let segment = &type_path.path.segments[0];
-                    if segment.ident == "Vec" {
-                        quote! { #ident: val.#ident.into_iter().map(|i| i.into()).collect() }
-                    } else if segment.ident == "Option" {
-                        if get_path(&segment.arguments).is_some_and(|tp| tp.path.segments[0].ident == "Vec") {
-                            quote! { #ident: val.#ident.map(|i| i.into_iter().map(|a| a.into()).collect()) }
-                        } else {
-                            quote! { #ident: val.#ident.map(|i| i.into()) }
-                        }
+            field.ident.as_ref().map(|ident| if let Type::Path(type_path) = ty {
+                let segment = &type_path.path.segments[0];
+                if segment.ident == "Vec" {
+                    quote! { #ident: val.#ident.into_iter().map(|i| i.into()).collect() }
+                } else if segment.ident == "Option" {
+                    if get_path(&segment.arguments).is_some_and(|tp| tp.path.segments[0].ident == "Vec") {
+                        quote! { #ident: val.#ident.map(|i| i.into_iter().map(|a| a.into()).collect()) }
                     } else {
-                        quote! { #ident: val.#ident.into() }
+                        quote! { #ident: val.#ident.map(|i| i.into()) }
                     }
+                } else {
+                    quote! { #ident: val.#ident.into() }
                 }
-                _ => quote! { #ident: val.#ident.into() },
-            })
+            } else { quote! { #ident: val.#ident.into() } })
         })
         .collect()
 }
@@ -229,23 +226,20 @@ fn get_enum_fields(fields: &Fields) -> Vec<TokenStream> {
         .iter()
         .filter_map(|field| {
             let ty = &field.ty;
-            field.ident.as_ref().map(|ident| match ty {
-                Type::Path(type_path) => {
-                    let segment = &type_path.path.segments[0];
-                    if segment.ident == "Vec" {
-                        quote! { #ident: #ident.into_iter().map(|i| i.into()).collect() }
-                    } else if segment.ident == "Option" {
-                        if get_path(&segment.arguments).is_some_and(|tp| tp.path.segments[0].ident == "Vec") {
-                            quote! { #ident: #ident.map(|i| i.into_iter().map(|a| a.into()).collect()) }
-                        } else {
-                            quote! { #ident: #ident.map(|i| i.into()) }
-                        }
+            field.ident.as_ref().map(|ident| if let Type::Path(type_path) = ty {
+                let segment = &type_path.path.segments[0];
+                if segment.ident == "Vec" {
+                    quote! { #ident: #ident.into_iter().map(|i| i.into()).collect() }
+                } else if segment.ident == "Option" {
+                    if get_path(&segment.arguments).is_some_and(|tp| tp.path.segments[0].ident == "Vec") {
+                        quote! { #ident: #ident.map(|i| i.into_iter().map(|a| a.into()).collect()) }
                     } else {
-                        quote! { #ident: #ident.into() }
+                        quote! { #ident: #ident.map(|i| i.into()) }
                     }
+                } else {
+                    quote! { #ident: #ident.into() }
                 }
-                _ => quote! { #ident: #ident.into() },
-            })
+            } else { quote! { #ident: #ident.into() } })
         })
         .collect()
 }
