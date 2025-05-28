@@ -8,7 +8,7 @@ use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
     input::{ParseError, PaymentMethod, PaymentRequest, PaymentRequestSource},
-    utils::{ReqwestRestClient, RestClient},
+    rest::{ReqwestRestClient, RestClient},
 };
 
 use super::{

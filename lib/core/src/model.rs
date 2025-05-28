@@ -1,4 +1,4 @@
-use crate::input::{
+use breez_sdk_common::input::{
     BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
     LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, PaymentRequest,
     ReceiveRequest, SilentPaymentAddress, SuccessActionProcessed,
@@ -20,7 +20,7 @@ pub enum BitcoinPaymentMethod {
     SilentPaymentAddress(SilentPaymentAddress),
 }
 
-#[async_trait]
+#[breez_sdk_macros::async_trait]
 pub trait BreezServices {
     async fn parse_and_pick(&self, input: &str) -> Result<PickedInputType, ParseAndPickError>;
     async fn pick_payment_method(

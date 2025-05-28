@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
-    utils::RestClient,
+    rest::RestClient,
 };
 
 #[derive(Debug)]

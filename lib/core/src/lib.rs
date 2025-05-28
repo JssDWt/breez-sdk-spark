@@ -1,12 +1,9 @@
-mod dns;
 mod error;
-mod input;
 mod model;
-mod utils;
 
 use std::collections::HashMap;
 
-use crate::input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest};
+use breez_sdk_common::input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest};
 use error::{ParseAndPickError, PickPaymentMethodError};
 
 use model::{
@@ -33,7 +30,7 @@ impl BreezServicesCore {
         input: &str,
         supported: &[PaymentMethodType],
     ) -> Result<PickedInputType, ParseAndPickError> {
-        let input = crate::input::parse(input).await?;
+        let input = breez_sdk_common::input::parse(input).await?;
         Ok(match input {
             InputType::LnurlAuth(lnurl_auth) => PickedInputType::LnurlAuth(lnurl_auth),
             InputType::PaymentRequest(req) => {
@@ -127,6 +124,3 @@ fn expand_payment_method(payment_method: PaymentMethod) -> PickedPaymentMethod {
         }
     }
 }
-
-#[cfg(test)]
-mod test_utils;
