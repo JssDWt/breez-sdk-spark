@@ -60,7 +60,7 @@ impl RestClient for ReqwestRestClient {
         debug!("Making POST request to: {url}");
         let mut req = self.client.post(url).timeout(REQUEST_TIMEOUT);
         if let Some(headers) = headers {
-            for (key, value) in headers.iter() {
+            for (key, value) in &headers {
                 req = req.header(key, value);
             }
         }

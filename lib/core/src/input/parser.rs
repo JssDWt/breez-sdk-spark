@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 
 use bitcoin::{Address, Denomination, address::NetworkUnchecked};
 use lightning::bolt11_invoice::Bolt11InvoiceDescriptionRef;
@@ -46,8 +45,8 @@ where
 {
     pub fn new(dns_resolver: D, rest_client: C) -> Self {
         InputParser {
-            dns_resolver,
             rest_client,
+            dns_resolver,
         }
     }
 
@@ -101,7 +100,7 @@ where
             return Ok(None);
         }
 
-        println!("{}", input);
+        println!("{input}");
         let uri = input.to_string();
         let input = &input[BIP_21_PREFIX.len()..];
         let mut bip_21 = Bip21 {
@@ -114,7 +113,7 @@ where
             None => (input, None),
         };
 
-        println!("{} - {}, {:?}", input, address, params);
+        println!("{input} - {address}, {params:?}");
 
         if !address.is_empty() {
             let address: Address<NetworkUnchecked> =
@@ -149,14 +148,11 @@ where
 
         if let Some(params) = params {
             for param in params.split('&') {
-                let pos = param.find('=').ok_or_else(|| Bip21Error::MissingEquals)?;
+                let pos = param.find('=').ok_or(Bip21Error::MissingEquals)?;
                 let original_key_string = param[..pos].to_lowercase();
                 let original_key = original_key_string.as_str();
                 let value = &param[(pos + 1)..];
-                let (key, is_required) = match original_key.starts_with("req-") {
-                    true => (&original_key[4..], true),
-                    false => (original_key, false),
-                };
+                let (key, is_required) = if original_key.starts_with("req-") { (&original_key[4..], true) } else { (original_key, false) };
 
                 match key {
                     "amount" if bip_21.amount_sat.is_some() => {
@@ -167,7 +163,7 @@ where
                             bitcoin::Amount::from_str_in(value, Denomination::Bitcoin)
                                 .map_err(|_| Bip21Error::InvalidAmount)?
                                 .to_sat(),
-                        )
+                        );
                     }
                     "assetid" if bip_21.asset_id.is_some() => {
                         return Err(Bip21Error::multiple_params(key));
@@ -267,8 +263,7 @@ where
 
         // Query for TXT records of a domain
         let dns_name = format!(
-            "{}.{}.{}",
-            local_part, BIP_353_USER_BITCOIN_PAYMENT_PREFIX, domain
+            "{local_part}.{BIP_353_USER_BITCOIN_PAYMENT_PREFIX}.{domain}"
         );
         let records = match self.dns_resolver.txt_lookup(dns_name).await {
             Ok(records) => records,
@@ -294,19 +289,16 @@ where
 
     async fn parse_bitcoin(&self, input: &str, source: &PaymentRequestSource) -> Option<InputType> {
         if let Ok((hrp, _)) = bech32::decode(input) {
-            match hrp.to_lowercase().as_str() {
-                "sp" => match self.parse_silent_payment_address(input, source).await {
-                    Some(silent_payment) => {
-                        return Some(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
-                            PaymentMethod::SilentPaymentAddress(silent_payment),
-                        )));
-                    }
-                    None => {
-                        return None;
-                    }
-                },
-                _ => {}
-            }
+            if hrp.to_lowercase().as_str() == "sp" { match self.parse_silent_payment_address(input, source).await {
+                Some(silent_payment) => {
+                    return Some(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
+                        PaymentMethod::SilentPaymentAddress(silent_payment),
+                    )));
+                }
+                None => {
+                    return None;
+                }
+            } }
         }
 
         if let Some(address) = self.parse_bitcoin_address(input, source).await {
@@ -357,10 +349,7 @@ where
         input: &str,
         source: &PaymentRequestSource,
     ) -> Result<Option<InputType>, ParseError> {
-        let input = match has_lightning_prefix(input) {
-            true => &input[LIGHTNING_PREFIX_LEN..], // Strip the lightning: prefix regardless of case
-            false => input,
-        };
+        let input = if has_lightning_prefix(input) { &input[LIGHTNING_PREFIX_LEN..] } else { input };
 
         if let Some(payment_method) = self.parse_lightning_payment_method(input, source).await? {
             return Ok(Some(InputType::PaymentRequest(
@@ -399,10 +388,7 @@ where
             return None;
         }
 
-        let scheme = match domain.ends_with(".onion") {
-            true => "http://",
-            false => "https://",
-        };
+        let scheme = if domain.ends_with(".onion") { "http://" } else { "https://" };
 
         let url = match reqwest::Url::parse(&format!("{scheme}{domain}/.well-known/lnurlp/{user}"))
         {
@@ -432,10 +418,7 @@ where
         input: &str,
         source: &PaymentRequestSource,
     ) -> Result<Option<PaymentMethod>, ParseError> {
-        let input = match has_lightning_prefix(input) {
-            true => &input[LIGHTNING_PREFIX_LEN..], // Strip the lightning: prefix regardless of case
-            false => input,
-        };
+        let input = if has_lightning_prefix(input) { &input[LIGHTNING_PREFIX_LEN..] } else { input };
 
         if let Some(bolt11) = parse_bolt11(input, source) {
             return Ok(Some(PaymentMethod::Bolt11Invoice(bolt11)));
@@ -463,12 +446,12 @@ where
                 if hrp != LNURL_HRP {
                     return Ok(None);
                 }
-                let decoded = match String::from_utf8(data) {
+                
+
+                match String::from_utf8(data) {
                     Ok(decoded) => decoded,
                     Err(_) => return Ok(None),
-                };
-
-                decoded
+                }
             }
             Err(_) => input.to_string(),
         };
@@ -515,7 +498,7 @@ where
                                 "failed to rewrite lnurl scheme to http".to_string(),
                             )
                         },
-                    )?
+                    )?;
                 } else {
                     url = reqwest::Url::parse(&replace_prefix(&input, scheme, "https")).map_err(
                         |_| {
@@ -523,7 +506,7 @@ where
                                 "failed to rewrite lnurl scheme to https".to_string(),
                             )
                         },
-                    )?
+                    )?;
                 }
             }
             &_ => return Err(LnurlError::UnknownScheme), // TODO: log or return error.
@@ -555,11 +538,11 @@ where
 
         let (response, _) = self
             .rest_client
-            .get(&url.to_string())
+            .get(url.as_ref())
             .await
-            .map_err(|e| LnurlError::EndpointError(e))?;
+            .map_err(LnurlError::EndpointError)?;
         let lnurl_data: LnurlRequestData =
-            parse_json(&response).map_err(|e| LnurlError::EndpointError(e))?;
+            parse_json(&response).map_err(LnurlError::EndpointError)?;
         let domain = url.host().ok_or(LnurlError::MissingDomain)?.to_string();
         Ok(match lnurl_data {
             LnurlRequestData::PayRequest { data } => {
@@ -592,7 +575,7 @@ where
             .find(|(key, _)| key == "action")
             .map(|(_, v)| v.to_string());
 
-        println!("k1: {k1}, action: {:?}", maybe_action);
+        println!("k1: {k1}, action: {maybe_action:?}");
         let k1_bytes = hex::decode(&k1).map_err(|e| LnurlError::InvalidK1)?;
         if k1_bytes.len() != 32 {
             return Err(LnurlError::InvalidK1);
@@ -659,7 +642,7 @@ fn extract_bip353_record(records: Vec<String>) -> Option<String> {
         return None;
     }
 
-    bip353_record.into_iter().nth(0)
+    bip353_record.into_iter().next()
 }
 
 fn parse_bolt11(input: &str, source: &PaymentRequestSource) -> Option<DetailedBolt11Invoice> {
@@ -687,7 +670,7 @@ fn parse_bolt11(input: &str, source: &PaymentRequestSource) -> Option<DetailedBo
         network: bolt11.network().into(),
         payee_pubkey: bolt11.get_payee_pub_key().to_string(),
         payment_hash: bolt11.payment_hash().to_string(),
-        payment_secret: hex::encode(&bolt11.payment_secret().0),
+        payment_secret: hex::encode(bolt11.payment_secret().0),
         routing_hints: bolt11
             .route_hints()
             .into_iter()
@@ -745,11 +728,11 @@ fn parse_bolt12_offer(input: &str, source: &PaymentRequestSource) -> Option<Deta
         },
         paths: offer
             .paths()
-            .into_iter()
+            .iter()
             .map(|p| Bolt12OfferBlindedPath {
                 blinded_hops: p
                     .blinded_hops()
-                    .into_iter()
+                    .iter()
                     .map(|h| h.blinded_node_id.to_string())
                     .collect(),
             })
@@ -808,7 +791,7 @@ pub enum LnurlRequestData {
 
 #[cfg(test)]
 mod tests {
-    use bitcoin::secp256k1::{PublicKey, Secp256k1, SecretKey};
+    
     use serde_json::json;
 
     use crate::input::error::Bip21Error;
@@ -816,7 +799,7 @@ mod tests {
     use crate::input::{
         Bip21, BitcoinAddress, InputType, ParseError, PaymentMethod, PaymentRequest,
     };
-    use crate::test_utils::mock_dns_resolver::{self, MockDnsResolver};
+    use crate::test_utils::mock_dns_resolver::{MockDnsResolver};
     use crate::test_utils::mock_rest_client::{MockResponse, MockRestClient};
 
     #[cfg(all(target_family = "wasm", target_os = "unknown"))]
@@ -1092,7 +1075,7 @@ mod tests {
         // This should be handled by parse_bip_353
         // Since mocking DNS is complex, we'll just ensure the method exists and is called
         let result = input_parser.parse(bip353_address).await;
-        println!("Debug - bip353 address result: {:?}", result);
+        println!("Debug - bip353 address result: {result:?}");
 
         // The result might be Err if DNS mocking isn't set up
         // Just check the method exists and runs without crashing
@@ -1142,8 +1125,7 @@ mod tests {
         ] {
             let result = input_parser.parse(address).await;
             println!(
-                "Debug - bitcoin address result for '{}': {:?}",
-                address, result
+                "Debug - bitcoin address result for '{address}': {result:?}"
             );
             assert!(matches!(
                 result,
@@ -1163,7 +1145,7 @@ mod tests {
 
         // Invalid address with the `bitcoin:` prefix
         let result = input_parser.parse("bitcoin:testinvalidaddress").await;
-        println!("Debug - invalid bip21 address result: {:?}", result);
+        println!("Debug - invalid bip21 address result: {result:?}");
         assert!(matches!(
             result,
             Err(ParseError::Bip21Error(Bip21Error::InvalidAddress))
@@ -1175,8 +1157,7 @@ mod tests {
         let bip21_addr = format!("bitcoin:{addr}");
         let result = input_parser.parse(&bip21_addr).await;
         println!(
-            "Debug - valid bip21 address result for '{}': {:?}",
-            bip21_addr, result
+            "Debug - valid bip21 address result for '{bip21_addr}': {result:?}"
         );
         assert!(matches!(
             result,
@@ -1188,8 +1169,7 @@ mod tests {
         let bip21_addr_amount = format!("bitcoin:{addr}?amount=0.00002000");
         let result = input_parser.parse(&bip21_addr_amount).await;
         println!(
-            "Debug - bip21 with amount result for '{}': {:?}",
-            bip21_addr_amount, result
+            "Debug - bip21 with amount result for '{bip21_addr_amount}': {result:?}"
         );
         assert!(matches!(
             result,
@@ -1204,8 +1184,7 @@ mod tests {
         let bip21_addr_amount_label = format!("bitcoin:{addr}?amount=0.00002000&label={lbl}");
         let result = input_parser.parse(&bip21_addr_amount_label).await;
         println!(
-            "Debug - bip21 with amount and label result for '{}': {:?}",
-            bip21_addr_amount_label, result
+            "Debug - bip21 with amount and label result for '{bip21_addr_amount_label}': {result:?}"
         );
         assert!(matches!(
             result,
@@ -1222,8 +1201,7 @@ mod tests {
             format!("bitcoin:{addr}?amount=0.00002000&label={lbl}&message={msg}");
         let result = input_parser.parse(&bip21_addr_amount_label_msg).await;
         println!(
-            "Debug - bip21 with amount, label and message result for '{}': {:?}",
-            bip21_addr_amount_label_msg, result
+            "Debug - bip21 with amount, label and message result for '{bip21_addr_amount_label_msg}': {result:?}"
         );
         assert!(matches!(
             result,
@@ -1248,8 +1226,7 @@ mod tests {
                 .parse(&format!("bitcoin:{addr}?amount={amount_btc}"))
                 .await;
             println!(
-                "Debug - bip21 rounding result for amount {}: {:?}",
-                amount_btc, result
+                "Debug - bip21 rounding result for amount {amount_btc}: {result:?}"
             );
 
             assert!(matches!(
@@ -1270,7 +1247,7 @@ mod tests {
 
         // Invoice without prefix
         let result = input_parser.parse(bolt11).await;
-        println!("Debug - bolt11 without prefix result: {:?}", result);
+        println!("Debug - bolt11 without prefix result: {result:?}");
         assert!(matches!(
             result,
             Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
@@ -1281,7 +1258,7 @@ mod tests {
         // Invoice with prefix
         let invoice_with_prefix = format!("lightning:{bolt11}");
         let result = input_parser.parse(&invoice_with_prefix).await;
-        println!("Debug - bolt11 with prefix result: {:?}", result);
+        println!("Debug - bolt11 with prefix result: {result:?}");
         assert!(matches!(
             result,
             Ok(InputType::PaymentRequest(PaymentRequest::PaymentMethod(
@@ -1300,8 +1277,7 @@ mod tests {
         // Invoice without prefix
         let result = input_parser.parse(bolt11).await;
         println!(
-            "Debug - capitalized bolt11 without prefix result: {:?}",
-            result
+            "Debug - capitalized bolt11 without prefix result: {result:?}"
         );
         assert!(matches!(
             result,
@@ -1314,8 +1290,7 @@ mod tests {
         let invoice_with_prefix = format!("LIGHTNING:{bolt11}");
         let result = input_parser.parse(&invoice_with_prefix).await;
         println!(
-            "Debug - capitalized bolt11 with prefix result: {:?}",
-            result
+            "Debug - capitalized bolt11 with prefix result: {result:?}"
         );
         assert!(matches!(
             result,
@@ -1341,8 +1316,7 @@ mod tests {
             .parse(&format!("bitcoin:{addr}?lightning={bolt11}"))
             .await;
         println!(
-            "Debug - bolt11 with fallback bitcoin address (case 1): {:?}",
-            result
+            "Debug - bolt11 with fallback bitcoin address (case 1): {result:?}"
         );
         assert!(matches!(
             result,
@@ -1357,8 +1331,7 @@ mod tests {
             ))
             .await;
         println!(
-            "Debug - bolt11 with fallback bitcoin address (case 2): {:?}",
-            result
+            "Debug - bolt11 with fallback bitcoin address (case 2): {result:?}"
         );
         assert!(matches!(
             result,
@@ -1390,7 +1363,7 @@ mod tests {
         let bolt12_offer = "lno1zcss9mk8y3wkklfvevcrszlmu23kfrxh49px20665dqwmn4p72pksese";
 
         let result = input_parser.parse(bolt12_offer).await;
-        println!("Debug - bolt12 offer result: {:?}", result);
+        println!("Debug - bolt12 offer result: {result:?}");
 
         assert!(matches!(
             result,
@@ -1403,8 +1376,7 @@ mod tests {
         let prefixed_bolt12 = format!("lightning:{bolt12_offer}");
         let result = input_parser.parse(&prefixed_bolt12).await;
         println!(
-            "Debug - bolt12 offer with lightning prefix result: {:?}",
-            result
+            "Debug - bolt12 offer with lightning prefix result: {result:?}"
         );
 
         assert!(matches!(
@@ -1427,7 +1399,7 @@ mod tests {
         // Address with Bolt12 offer parameter
         let bip21_with_bolt12 = format!("bitcoin:{addr}?lno={bolt12_offer}");
         let result = input_parser.parse(&bip21_with_bolt12).await;
-        println!("Debug - bip21 with bolt12 offer result: {:?}", result);
+        println!("Debug - bip21 with bolt12 offer result: {result:?}");
 
         assert!(matches!(
             result,
@@ -1440,8 +1412,7 @@ mod tests {
             format!("bitcoin:{addr}?amount=0.00002000&lno={bolt12_offer}");
         let result = input_parser.parse(&bip21_with_amount_bolt12).await;
         println!(
-            "Debug - bip21 with amount and bolt12 offer result: {:?}",
-            result
+            "Debug - bip21 with amount and bolt12 offer result: {result:?}"
         );
 
         assert!(matches!(
@@ -1473,7 +1444,7 @@ mod tests {
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
 
         let result = input_parser.parse("invalid_input").await;
-        println!("Debug - invalid input result: {:?}", result);
+        println!("Debug - invalid input result: {result:?}");
 
         assert!(matches!(
             result,
@@ -1492,7 +1463,7 @@ mod tests {
 
         // This should trigger parse_lightning_address method
         let result = input_parser.parse(ln_address).await;
-        println!("Debug - lightning address result: {:?}", result);
+        println!("Debug - lightning address result: {result:?}");
 
         // Since this depends on the actual implementation of lightning address resolution,
         // we'll just check that it doesn't error out
@@ -1510,7 +1481,7 @@ mod tests {
 
         // This should also be handled by parse_lightning_address after stripping the prefix
         let result = input_parser.parse(ln_address).await;
-        println!("Debug - lightning address with prefix result: {:?}", result);
+        println!("Debug - lightning address with prefix result: {result:?}");
 
         // Verify that it handles the bitcoin symbol prefix correctly
         assert!(result.is_ok());
@@ -1528,7 +1499,7 @@ mod tests {
 
         // Should be handled by parse_lnurl method
         let result = input_parser.parse(lnurl_pay_encoded).await;
-        println!("Debug - lnurl result: {:?}", result);
+        println!("Debug - lnurl result: {result:?}");
 
         // Verify LNURL parsing works
         assert!(result.is_ok());
@@ -1536,7 +1507,7 @@ mod tests {
         // Test with lightning: prefix
         let prefixed_lnurl = format!("lightning:{lnurl_pay_encoded}");
         let result = input_parser.parse(&prefixed_lnurl).await;
-        println!("Debug - lnurl with lightning prefix result: {:?}", result);
+        println!("Debug - lnurl with lightning prefix result: {result:?}");
         assert!(result.is_ok());
     }
 
@@ -1550,7 +1521,7 @@ mod tests {
 
         // Should be handled by parse_lnurl method, recognizing it as an auth request
         let result = input_parser.parse(lnurl_auth_encoded).await;
-        println!("Debug - lnurl auth result: {:?}", result);
+        println!("Debug - lnurl auth result: {result:?}");
 
         // Verify LNURL-auth parsing works
         assert!(result.is_ok());
@@ -1568,19 +1539,19 @@ mod tests {
         // Test with lnurlp:// prefix
         let lnurlp_scheme = "lnurlp://domain.com/lnurl-pay?session=test";
         let result = input_parser.parse(lnurlp_scheme).await;
-        println!("Debug - lnurlp scheme result: {:?}", result);
+        println!("Debug - lnurlp scheme result: {result:?}");
         assert!(result.is_ok());
 
         // Test with lnurlw:// prefix
         let lnurlw_scheme = "lnurlw://domain.com/lnurl-withdraw?session=test";
         let result = input_parser.parse(lnurlw_scheme).await;
-        println!("Debug - lnurlw scheme result: {:?}", result);
+        println!("Debug - lnurlw scheme result: {result:?}");
         assert!(result.is_ok());
 
         // Test with keyauth:// prefix
         let keyauth_scheme = "keyauth://domain.com/lnurl-login?tag=login&k1=37b4c919f871c090830cc47b92a544a30097f03430bc39670b8ec0da89f01a81";
         let result = input_parser.parse(keyauth_scheme).await;
-        println!("Debug - keyauth scheme result: {:?}", result);
+        println!("Debug - keyauth scheme result: {result:?}");
         assert!(result.is_ok());
     }
 
@@ -1595,7 +1566,7 @@ mod tests {
 
         // Should be handled by parse_lnurl method, recognizing it as a withdraw request
         let result = input_parser.parse(lnurl_withdraw_encoded).await;
-        println!("Debug - lnurl withdraw result: {:?}", result);
+        println!("Debug - lnurl withdraw result: {result:?}");
 
         // Verify LNURL-withdraw parsing works
         assert!(result.is_ok());
@@ -1619,18 +1590,18 @@ mod tests {
         let mock_rest_client = MockRestClient::new();
         let input_parser = InputParser::new(mock_dns_resolver, mock_rest_client);
         for address in [
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd"#,
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd "#,
-            r#"1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
-            r#"
+            r"1andreas3batLhQa2FawWjeyjCqyBzypd",
+            r"1andreas3batLhQa2FawWjeyjCqyBzypd ",
+            r"1andreas3batLhQa2FawWjeyjCqyBzypd
+            ",
+            r"
             1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
-            r#" 1andreas3batLhQa2FawWjeyjCqyBzypd
-            "#,
+            ",
+            r" 1andreas3batLhQa2FawWjeyjCqyBzypd
+            ",
         ] {
             let result = input_parser.parse(address).await;
-            println!("Debug - trim input result for '{}': {:?}", address, result);
+            println!("Debug - trim input result for '{address}': {result:?}");
             assert!(matches!(
                 result,
                 Ok(crate::input::InputType::PaymentRequest(

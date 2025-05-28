@@ -1,11 +1,10 @@
-use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use super::network::Network;
 use crate::utils::default_true;
 
-/// Wrapper for the decrypted [AesSuccessActionData] payload
+/// Wrapper for the decrypted [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct AesSuccessActionDataDecrypted {
     /// Contents description, up to 144 characters
@@ -15,7 +14,7 @@ pub struct AesSuccessActionDataDecrypted {
     pub plaintext: String,
 }
 
-/// Result of decryption of [AesSuccessActionData] payload
+/// Result of decryption of [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum AesSuccessActionDataResult {
     Decrypted { data: AesSuccessActionDataDecrypted },
@@ -67,9 +66,9 @@ pub struct Bolt11RouteHint {
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Bolt11RouteHintHop {
-    /// The node_id of the non-target end of the route
+    /// The `node_id` of the non-target end of the route
     pub src_node_id: String,
-    /// The short_channel_id of this channel
+    /// The `short_channel_id` of this channel
     pub short_channel_id: String,
     /// The fees which must be paid to use this channel
     pub fees_base_msat: u32,
@@ -180,7 +179,7 @@ pub struct LnurlAuthRequestData {
     pub url: String,
 }
 
-/// Wrapped in a [LnUrlError], this represents a LNURL-endpoint error.
+/// Wrapped in a [`LnUrlError`], this represents a LNURL-endpoint error.
 #[derive(Clone, Deserialize, Debug, Serialize)]
 pub struct LnurlErrorData {
     pub reason: String,
@@ -306,20 +305,20 @@ pub struct SilentPaymentAddress {
     pub source: PaymentRequestSource,
 }
 
-/// [SuccessAction] where contents are ready to be consumed by the caller
+/// [`SuccessAction`] where contents are ready to be consumed by the caller
 ///
-/// Contents are identical to [SuccessAction], except for AES where the ciphertext is decrypted.
+/// Contents are identical to [`SuccessAction`], except for AES where the ciphertext is decrypted.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub enum SuccessActionProcessed {
-    /// See [SuccessAction::Aes] for received payload
+    /// See [`SuccessAction::Aes`] for received payload
     ///
-    /// See [AesSuccessActionDataDecrypted] for decrypted payload
+    /// See [`AesSuccessActionDataDecrypted`] for decrypted payload
     Aes { result: AesSuccessActionDataResult },
 
-    /// See [SuccessAction::Message]
+    /// See [`SuccessAction::Message`]
     Message { data: MessageSuccessActionData },
 
-    /// See [SuccessAction::Url]
+    /// See [`SuccessAction::Url`]
     Url { data: UrlSuccessActionData },
 }
 

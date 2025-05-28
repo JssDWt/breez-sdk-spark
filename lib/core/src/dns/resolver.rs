@@ -29,7 +29,7 @@ impl Resolver {
 impl DnsResolver for Resolver {
     async fn txt_lookup(&self, dns_name: String) -> Result<Vec<String>> {
         let txt_lookup = self.resolver.txt_lookup(dns_name).await?;
-        let records: Vec<String> = txt_lookup.iter().map(|r| r.to_string()).collect();
+        let records: Vec<String> = txt_lookup.iter().map(std::string::ToString::to_string).collect();
         Ok(records)
     }
 }

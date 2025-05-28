@@ -9,9 +9,15 @@ use std::collections::HashMap;
 use crate::input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest};
 use error::{ParseAndPickError, PickPaymentMethodError};
 
-use model::*;
+use model::{BitcoinPaymentMethod, BreezServices, LightningPaymentMethod, LightningPaymentRequest, LnurlPaymentMethod, MilliSatoshi, PickedInputType, PickedPaymentMethod};
 
 pub struct BreezServicesCore {}
+
+impl Default for BreezServicesCore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl BreezServicesCore {
     pub fn new() -> Self {
@@ -47,7 +53,7 @@ impl BreezServicesCore {
     ) -> Result<PickedPaymentMethod, PickPaymentMethodError> {
         // TODO: Liquid should unpack the magic routing hint for example to send to a liquid address directly.
         Ok(match payment_request {
-            PaymentRequest::Bip21(bip_21) => self.expand_bip_21(bip_21, &supported).await?,
+            PaymentRequest::Bip21(bip_21) => self.expand_bip_21(bip_21, supported).await?,
             PaymentRequest::PaymentMethod(payment_method) => {
                 self.expand_payment_method(payment_method).await?
             }
@@ -108,9 +114,7 @@ impl BreezServicesCore {
     ) -> Result<PickedPaymentMethod, PickPaymentMethodError> {
         let mut payment_methods = HashMap::new();
         for payment_method in &bip_21.payment_methods {
-            if !payment_methods.contains_key(&payment_method.get_type()) {
-                payment_methods.insert(payment_method.get_type(), payment_method.clone());
-            }
+            payment_methods.entry(payment_method.get_type()).or_insert_with(|| payment_method.clone());
         }
 
         for supported_method in supported {
