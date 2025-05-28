@@ -4,7 +4,7 @@ mod wasm_bindgen;
 
 use proc_macro::TokenStream;
 
-/// Attribute macro switch async_trait usage depending on WASM target
+/// Attribute macro switch `async_trait` usage depending on WASM target
 #[proc_macro_attribute]
 pub fn async_trait(args: TokenStream, input: TokenStream) -> TokenStream {
     async_trait::async_trait(args, input)
