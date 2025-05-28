@@ -1079,10 +1079,6 @@ mod tests {
 
         // The result might be Err if DNS mocking isn't set up
         // Just check the method exists and runs without crashing
-        match result {
-            Ok(_) => assert!(true),
-            Err(_) => assert!(true),
-        }
     }
 
     #[breez_sdk_macros::async_test_all]
@@ -1234,7 +1230,7 @@ mod tests {
                 Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
                 if payment_methods.len() == 1
                     && amount_sat == Some(amt)
-                    && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == &addr)
+                    && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
             ));
         }
     }
