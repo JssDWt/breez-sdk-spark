@@ -36,10 +36,12 @@ use crate::{
     },
 };
 
+#[cfg_attr(feature = "uniffi", derive(uniffi::Object))]
 pub struct Sdk {
     supported: Vec<PaymentMethodType>,
 }
 
+#[cfg_attr(feature = "uniffi", uniffi::export)]
 impl Sdk {
     pub async fn accept_payment_proposed_fees(
         &self,

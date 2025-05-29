@@ -5,6 +5,7 @@ use crate::error::ServiceConnectivityError;
 pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum Bip21Error {
     #[error("bip21 contains invalid address")]
     InvalidAddress,
@@ -35,6 +36,7 @@ impl Bip21Error {
 }
 
 #[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum LnurlError {
     #[error("lnurl missing k1 parameter")]
     MissingK1,
@@ -62,6 +64,7 @@ pub struct LnurlErrorData {
 }
 
 #[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum ParseError {
     #[error("empty input")]
     EmptyInput,
