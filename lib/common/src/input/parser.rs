@@ -7,7 +7,7 @@ use tracing::{debug, error};
 use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
-    input::{ParseError, PaymentMethod, PaymentRequest, PaymentRequestSource},
+    input::{Bip21Extra, ParseError, PaymentMethod, PaymentRequest, PaymentRequestSource},
     lnurl::LnurlErrorData,
     rest::{ReqwestRestClient, RestClient},
 };
@@ -502,9 +502,10 @@ fn parse_bip_21(input: &str, source: &PaymentRequestSource) -> Result<Option<Bip
                         return Err(Bip21Error::UnknownRequiredParameter(extra_key.to_string()));
                     }
 
-                    bip_21
-                        .extras
-                        .push((original_key.to_string(), value.to_string()));
+                    bip_21.extras.push(Bip21Extra {
+                        key: original_key.to_string(),
+                        value: value.to_string(),
+                    });
                 }
             }
         }
@@ -783,7 +784,7 @@ mod tests {
     use crate::input::error::Bip21Error;
     use crate::input::parser::InputParser;
     use crate::input::{
-        Bip21, BitcoinAddress, InputType, ParseError, PaymentMethod, PaymentRequest,
+        Bip21, Bip21Extra, BitcoinAddress, InputType, ParseError, PaymentMethod, PaymentRequest,
     };
     use crate::test_utils::mock_dns_resolver::MockDnsResolver;
     use crate::test_utils::mock_rest_client::{MockResponse, MockRestClient};
@@ -937,8 +938,8 @@ mod tests {
             result,
             Ok(InputType::PaymentRequest(PaymentRequest::Bip21(bip21)))
             if bip21.extras.len() == 2 &&
-               bip21.extras.contains(&("custom".to_string(), "value".to_string())) &&
-               bip21.extras.contains(&("another".to_string(), "param".to_string()))
+               bip21.extras.contains(&Bip21Extra{ key: "custom".to_string(), value: "value".to_string()}) &&
+               bip21.extras.contains(&Bip21Extra{ key: "another".to_string(), value: "param".to_string()})
         ));
     }
 

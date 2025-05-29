@@ -3,6 +3,9 @@ name = "breez-sdk-core"
 edition = "2024"
 version.workspace = true
 
+[build-dependencies]
+uniffi = { workspace = true, features = ["build"], optional = true }
+
 [dependencies]
 breez-sdk-common.workspace = true
 breez-sdk-macros.workspace = true
@@ -10,6 +13,15 @@ serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tracing.workspace = true
+uniffi = { workspace = true, features = ["cli"], optional = true }
+
+[features]
+default = ["uniffi"]
+uniffi = ["breez-sdk-common/uniffi", "dep:uniffi"]
+
+[lib]
+crate-type = ["staticlib", "cdylib", "lib"]
+name = "breez_sdk_core"
 
 [lints]
 workspace = true

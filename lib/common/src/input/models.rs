@@ -5,6 +5,7 @@ use crate::utils::default_true;
 
 /// Wrapper for the decrypted [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct AesSuccessActionDataDecrypted {
     /// Contents description, up to 144 characters
     pub description: String,
@@ -15,12 +16,14 @@ pub struct AesSuccessActionDataDecrypted {
 
 /// Result of decryption of [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum AesSuccessActionDataResult {
     Decrypted { data: AesSuccessActionDataDecrypted },
     ErrorStatus { reason: String },
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum Amount {
     Bitcoin {
         amount_msat: u64,
@@ -35,17 +38,26 @@ pub enum Amount {
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bip21 {
     pub amount_sat: Option<u64>,
     pub asset_id: Option<String>,
     pub uri: String,
-    pub extras: Vec<(String, String)>,
+    pub extras: Vec<Bip21Extra>,
     pub label: Option<String>,
     pub message: Option<String>,
     pub payment_methods: Vec<PaymentMethod>,
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct Bip21Extra {
+    pub key: String,
+    pub value: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct BitcoinAddress {
     pub address: String,
     pub network: Network,
@@ -53,17 +65,20 @@ pub struct BitcoinAddress {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt11Invoice {
     pub bolt11: String,
     pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt11RouteHint {
     pub hops: Vec<Bolt11RouteHintHop>,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt11RouteHintHop {
     /// The `node_id` of the non-target end of the route
     pub src_node_id: String,
@@ -82,22 +97,26 @@ pub struct Bolt11RouteHintHop {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt12Invoice {
     pub invoice: String,
     pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt12InvoiceRequest {
     // TODO: Fill fields
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt12OfferBlindedPath {
     pub blinded_hops: Vec<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct DetailedBolt11Invoice {
     pub amount_msat: Option<u64>,
     pub description: Option<String>,
@@ -114,6 +133,7 @@ pub struct DetailedBolt11Invoice {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct DetailedBolt12Invoice {
     // TODO: Fill fields
     pub amount_msat: u64,
@@ -121,12 +141,14 @@ pub struct DetailedBolt12Invoice {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt12Offer {
     pub offer: String,
     pub source: PaymentRequestSource,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct DetailedBolt12Offer {
     pub absolute_expiry: Option<u64>,
     pub chains: Vec<String>,
@@ -139,6 +161,7 @@ pub struct DetailedBolt12Offer {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum InputType {
     LnurlAuth(LnurlAuthRequestData),
     PaymentRequest(PaymentRequest),
@@ -147,12 +170,14 @@ pub enum InputType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LightningAddress {
     pub address: String,
     pub pay_request: LnurlPayRequest,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LiquidAddress {
     pub address: String,
     pub network: Network,
@@ -160,6 +185,7 @@ pub struct LiquidAddress {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LnurlAuthRequestData {
     /// Hex encoded 32 bytes of challenge
     pub k1: String,
@@ -180,6 +206,7 @@ pub struct LnurlAuthRequestData {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LnurlPayRequest {
     pub callback: String,
     /// The minimum amount, in millisats, that this LNURL-pay endpoint accepts
@@ -219,6 +246,7 @@ pub struct LnurlPayRequest {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LnurlWithdrawRequestData {
     pub callback: String,
     pub k1: String,
@@ -230,23 +258,27 @@ pub struct LnurlWithdrawRequestData {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct MessageSuccessActionData {
     pub message: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum PaymentRequest {
     Bip21(Bip21),
     PaymentMethod(PaymentMethod),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PaymentRequestSource {
     pub bip_21_uri: Option<String>,
     pub bip_353_address: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum PaymentMethod {
     BitcoinAddress(BitcoinAddress),
     Bolt11Invoice(DetailedBolt11Invoice),
@@ -274,6 +306,7 @@ impl PaymentMethod {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum PaymentMethodType {
     BitcoinAddress,
     Bolt11Invoice,
@@ -286,12 +319,14 @@ pub enum PaymentMethodType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum ReceiveRequest {
     Bolt12InvoiceRequest(Bolt12InvoiceRequest),
     LnurlWithdraw(LnurlWithdrawRequestData),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct SilentPaymentAddress {
     pub address: String,
     pub network: Network,
@@ -302,6 +337,7 @@ pub struct SilentPaymentAddress {
 ///
 /// Contents are identical to [`SuccessAction`], except for AES where the ciphertext is decrypted.
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum SuccessActionProcessed {
     /// See [`SuccessAction::Aes`] for received payload
     ///
@@ -316,6 +352,7 @@ pub enum SuccessActionProcessed {
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct UrlSuccessActionData {
     /// Contents description, up to 144 characters
     pub description: String,

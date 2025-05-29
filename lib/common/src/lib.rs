@@ -8,3 +8,6 @@ pub mod utils;
 
 #[cfg(test)]
 pub mod test_utils;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!();

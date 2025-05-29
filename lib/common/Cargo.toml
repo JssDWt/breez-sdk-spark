@@ -19,6 +19,7 @@ strum = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+uniffi = { workspace = true, optional = true }
 
 [target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
 hickory-resolver = { workspace = true, features = ["dnssec-ring"] }
@@ -27,6 +28,13 @@ maybe-sync = { workspace = true, features = ["sync"] }
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 dns-parser.workspace = true
 maybe-sync.workspace = true
+
+[features]
+uniffi = ["dep:uniffi"]
+
+[lib]
+crate-type = ["staticlib", "cdylib", "lib"]
+name = "breez_sdk_common"
 
 [lints]
 workspace = true

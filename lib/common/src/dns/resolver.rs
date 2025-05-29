@@ -25,6 +25,12 @@ impl Resolver {
     }
 }
 
+impl Default for Resolver {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[breez_sdk_macros::async_trait]
 impl DnsResolver for Resolver {
     async fn txt_lookup(&self, dns_name: String) -> Result<Vec<String>> {

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use strum::Display;
 
 #[derive(Clone, Copy, Debug, Display, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum Network {
     /// Mainnet
     Bitcoin,

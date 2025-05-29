@@ -297,6 +297,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
+ "uniffi",
 ]
 
 [[package]]
@@ -309,6 +310,7 @@ dependencies = [
  "strum",
  "thiserror 2.0.12",
  "tracing",
+ "uniffi",
 ]
 
 [[package]]
