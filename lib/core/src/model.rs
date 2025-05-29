@@ -2,10 +2,10 @@ use breez_sdk_common::{
     fiat::{FiatCurrency, Rate},
     input::{
         BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
-        LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, ReceiveRequest,
+        LnurlAuthRequestData, LnurlPayRequest, PaymentMethod, ReceiveRequest,
         SilentPaymentAddress, SuccessActionProcessed,
     },
-    lnurl::LnurlCallbackStatus,
+    lnurl::{LnurlCallbackStatus, LnurlErrorData},
 };
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
