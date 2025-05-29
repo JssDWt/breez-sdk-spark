@@ -3,6 +3,9 @@ name = "breez-sdk-common"
 edition = "2024"
 version.workspace = true
 
+[build-dependencies]
+uniffi = { workspace = true, features = [ "build" ], optional = true }
+
 [dependencies]
 anyhow.workspace = true
 async-trait.workspace = true

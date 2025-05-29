@@ -13,7 +13,7 @@ serde = { workspace = true, features = ["derive"] }
 strum = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tracing.workspace = true
-uniffi = { workspace = true, features = ["cli"], optional = true }
+uniffi = { workspace = true, optional = true }
 
 [features]
 default = ["uniffi"]
