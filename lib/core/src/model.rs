@@ -1,10 +1,22 @@
-use breez_sdk_common::input::{
-    BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
-    LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, ReceiveRequest,
-    SilentPaymentAddress, SuccessActionProcessed,
+use breez_sdk_common::{
+    fiat::{FiatCurrency, Rate},
+    input::{
+        BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
+        LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest, PaymentMethod, ReceiveRequest,
+        SilentPaymentAddress, SuccessActionProcessed,
+    },
+    lnurl::LnurlCallbackStatus,
 };
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AcceptPaymentProposedFeesRequest {
+    pub response: FetchPaymentProposedFeesResponse,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct AcceptPaymentProposedFeesResponse {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum BitcoinPaymentMethod {
@@ -12,8 +24,72 @@ pub enum BitcoinPaymentMethod {
     SilentPaymentAddress(SilentPaymentAddress),
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, EnumString, PartialEq, Serialize)]
+pub enum BuyBitcoinProvider {
+    #[strum(serialize = "moonpay")]
+    Moonpay,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct BuyBitcoinRequest {
+    pub prepare_response: PrepareBuyBitcoinResponse,
+
+    /// The optional URL to redirect to after completing the buy.
+    ///
+    /// For Moonpay, see <https://dev.moonpay.com/docs/on-ramp-configure-user-journey-params>
+    pub redirect_url: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct BuyBitcoinResponse {
+    pub url: String,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct FeeBreakdown {} // TODO: This type may vary across different SDKs.
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchFiatCurrenciesResponse {
+    pub currencies: Vec<FiatCurrency>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchFiatRatesResponse {
+    pub rates: Vec<Rate>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchOnchainLimitsResponse {
+    // TODO
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchPaymentProposedFeesRequest {
+    pub payment_id: PaymentId,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchPaymentProposedFeesResponse {
+    // TODO
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct FetchRecommendedFeesResponse {
+    pub fastest_fee: u64,
+    pub half_hour_fee: u64,
+    pub hour_fee: u64,
+    pub economy_fee: u64,
+    pub minimum_fee: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct InitializeLoggingRequest {
+    pub log_dir: String,
+    // TODO: Add app logger using tracing crate or create a custom interface for logging
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct InitializeLoggingResponse {}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct LightningPaymentRequest {
@@ -29,11 +105,64 @@ pub enum LightningPaymentMethod {
     Bolt12Offer(Bolt12Offer),
 }
 
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+pub struct ListPaymentsRequest {
+    pub filters: Option<Vec<PaymentType>>,
+    pub states: Option<Vec<PaymentState>>,
+    /// Epoch time, in seconds
+    pub from_timestamp: Option<u64>,
+    /// Epoch time, in seconds
+    pub to_timestamp: Option<u64>,
+    pub offset: Option<u32>,
+    pub limit: Option<u32>,
+    pub sort_ascending: Option<bool>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ListPaymentsResponse {
+    pub payments: Vec<Payment>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ListRefundablesResponse {
+    pub payments: Vec<Payment>,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LnurlAuthRequest {
+    pub data: LnurlAuthRequestData,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LnurlAuthResponse {
+    // TODO: This should be empty, only on error should it contain an error message?
+    pub callback_status: LnurlCallbackStatus,
+}
+
 // TODO: Create easier interface for lnurl pay
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum LnurlPaymentMethod {
     LnurlPay(LnurlPayRequest),
     LightningAddress(LightningAddress),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LnurlPayErrorData {
+    pub payment_hash: String,
+    pub reason: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum LnurlPayResult {
+    EndpointSuccess(LnurlPaySuccessData),
+    EndpointError(LnurlErrorData),
+    PayError(LnurlPayErrorData),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct LnurlPaySuccessData {
+    pub payment: Payment,
+    pub success_action: Option<SuccessActionProcessed>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -45,7 +174,7 @@ pub struct Payment {
     pub created_at: u64,
     pub fee: MilliSatoshi,
     pub fee_breakdown: FeeBreakdown,
-    pub id: String,
+    pub id: PaymentId,
     pub payment_method: PaymentMethod,
     pub payment_request: String,
     pub payment_type: PaymentType,
@@ -55,6 +184,9 @@ pub struct Payment {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum PaymentDetails {} // TODO: This type may vary across different SDKs.
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PaymentId(pub String);
 
 #[derive(
     Clone, Copy, Debug, Default, Deserialize, Display, EnumString, Eq, Hash, PartialEq, Serialize,
@@ -80,6 +212,34 @@ pub enum PaymentType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum PickedPaymentMethod {
+    Bitcoin(BitcoinPaymentMethod),
+    Lightning(LightningPaymentRequest),
+    LnurlPay(LnurlPaymentMethod),
+    LiquidAddress(LiquidAddress),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub enum PickedInputType {
+    LnurlAuth(LnurlAuthRequestData),
+    PaymentMethod(PickedPaymentMethod),
+    ReceiveRequest(ReceiveRequest),
+    Url(String),
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PrepareBuyBitcoinRequest {
+    pub provider: BuyBitcoinProvider,
+    pub amount_sat: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PrepareBuyBitcoinResponse {
+    pub req: PrepareBuyBitcoinRequest,
+    pub fee: MilliSatoshi,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct PrepareReceivePaymentRequest {
     pub amount: MilliSatoshi,
     pub receive_method: ReceiveMethod,
@@ -91,6 +251,16 @@ pub struct PrepareReceivePaymentResponse {
     pub fee: MilliSatoshi,
     pub min_payer_amount: MilliSatoshi,
     pub max_payer_amount: MilliSatoshi,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PrepareRefundRequest {
+    // TODO
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct PrepareRefundResponse {
+    // TODO
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -166,6 +336,34 @@ pub struct ReceivePaymentResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RecommendedFees {
+    pub fastest_fee: u64,
+    pub half_hour_fee: u64,
+    pub hour_fee: u64,
+    pub economy_fee: u64,
+    pub minimum_fee: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RefundRequest {
+    pub prepared: PrepareRefundResponse,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RefundResponse {
+    // TODO
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RegisterWebhookRequest {
+    pub url: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct RegisterWebhookResponse {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct SendBitcoinRequest {
     pub prepared: PrepareSendBitcoinResponse,
 }
@@ -206,36 +404,34 @@ pub struct SendLnurlPayResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LnurlPayErrorData {
-    pub payment_hash: String,
-    pub reason: String,
+pub struct SignMessageRequest {
+    pub message: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum LnurlPayResult {
-    EndpointSuccess(LnurlPaySuccessData),
-    EndpointError(LnurlErrorData),
-    PayError(LnurlPayErrorData),
+pub struct SignMessageResponse {
+    pub signature: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct LnurlPaySuccessData {
-    pub payment: Payment,
-    pub success_action: Option<SuccessActionProcessed>,
+pub struct UnregisterWebhookRequest {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct UnregisterWebhookResponse {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct VerifyMessageRequest {
+    /// The message that was signed.
+    pub message: String,
+    /// The public key of the node that signed the message.
+    pub pubkey: String,
+    /// The zbase encoded signature to verify.
+    pub signature: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PickedPaymentMethod {
-    Bitcoin(BitcoinPaymentMethod),
-    Lightning(LightningPaymentRequest),
-    LnurlPay(LnurlPaymentMethod),
-    LiquidAddress(LiquidAddress),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-pub enum PickedInputType {
-    LnurlAuth(LnurlAuthRequestData),
-    PaymentMethod(PickedPaymentMethod),
-    ReceiveRequest(ReceiveRequest),
-    Url(String),
+pub struct VerifyMessageResponse {
+    /// Boolean value indicating whether the signature covers the message and
+    /// was signed by the given pubkey.
+    pub is_valid: bool,
 }

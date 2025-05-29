@@ -178,12 +178,6 @@ pub struct LnurlAuthRequestData {
     pub url: String,
 }
 
-/// Wrapped in a [`LnUrlError`], this represents a LNURL-endpoint error.
-#[derive(Clone, Deserialize, Debug, Serialize)]
-pub struct LnurlErrorData {
-    pub reason: String,
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LnurlPayRequest {

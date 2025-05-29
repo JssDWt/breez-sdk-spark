@@ -8,14 +8,15 @@ use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
     input::{ParseError, PaymentMethod, PaymentRequest, PaymentRequestSource},
+    lnurl::LnurlErrorData,
     rest::{ReqwestRestClient, RestClient},
 };
 
 use super::{
     Bip21, BitcoinAddress, Bolt11RouteHint, Bolt11RouteHintHop, Bolt12InvoiceRequest, Bolt12Offer,
     Bolt12OfferBlindedPath, DetailedBolt11Invoice, DetailedBolt12Invoice, DetailedBolt12Offer,
-    InputType, LightningAddress, LnurlAuthRequestData, LnurlErrorData, LnurlPayRequest,
-    LnurlWithdrawRequestData, ReceiveRequest, SilentPaymentAddress,
+    InputType, LightningAddress, LnurlAuthRequestData, LnurlPayRequest, LnurlWithdrawRequestData,
+    ReceiveRequest, SilentPaymentAddress,
     error::{Bip21Error, LnurlError, ParseResult},
 };
 

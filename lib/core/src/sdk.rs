@@ -4,28 +4,119 @@ use breez_sdk_common::input::{Bip21, InputType, PaymentMethod, PaymentMethodType
 
 use crate::{
     error::{
-        ParseAndPickError, PickPaymentMethodError, PrepareReceivePaymentError,
+        AcceptPaymentProposedFeesError, BuyBitcoinError, FetchFiatCurrenciesError,
+        FetchFiatRatesError, FetchOnchainLimitsError, FetchPaymentProposedFeesError,
+        FetchRecommendedFeesError, GetPaymentError, InitializeLoggingError, ListPaymentsError,
+        ListRefundablesError, LnurlAuthError, ParseAndPickError, PickPaymentMethodError,
+        PrepareBuyBitcoinError, PrepareReceivePaymentError, PrepareRefundError,
         PrepareSendBitcoinError, PrepareSendLightningError, PrepareSendLiquidAddressError,
-        PrepareSendLnurlPayError, ReceivePaymentError, SendBitcoinError, SendLightningError,
-        SendLiquidAddressError, SendLnurlPayError,
+        PrepareSendLnurlPayError, ReceivePaymentError, RefundError, RegisterWebhookError,
+        SendBitcoinError, SendLightningError, SendLiquidAddressError, SendLnurlPayError,
+        SignMessageError, UnregisterWebhookError, VerifyMessageError,
     },
     model::{
-        BitcoinPaymentMethod, LightningPaymentMethod, LightningPaymentRequest, LnurlPaymentMethod,
-        MilliSatoshi, PickedInputType, PickedPaymentMethod, PrepareReceivePaymentRequest,
-        PrepareReceivePaymentResponse, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
+        AcceptPaymentProposedFeesRequest, AcceptPaymentProposedFeesResponse, BitcoinPaymentMethod,
+        BuyBitcoinRequest, BuyBitcoinResponse, FetchFiatCurrenciesResponse, FetchFiatRatesResponse,
+        FetchOnchainLimitsResponse, FetchPaymentProposedFeesRequest,
+        FetchPaymentProposedFeesResponse, FetchRecommendedFeesResponse, InitializeLoggingRequest,
+        InitializeLoggingResponse, LightningPaymentMethod, LightningPaymentRequest,
+        ListPaymentsRequest, ListPaymentsResponse, ListRefundablesResponse, LnurlAuthRequest,
+        LnurlAuthResponse, LnurlPaymentMethod, MilliSatoshi, Payment, PickedInputType,
+        PickedPaymentMethod, PrepareBuyBitcoinRequest, PrepareBuyBitcoinResponse,
+        PrepareReceivePaymentRequest, PrepareReceivePaymentResponse, PrepareRefundRequest,
+        PrepareRefundResponse, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
         PrepareSendLightningRequest, PrepareSendLightningResponse, PrepareSendLiquidAddressRequest,
         PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
-        ReceivePaymentRequest, ReceivePaymentResponse, SendBitcoinRequest, SendBitcoinResponse,
+        ReceivePaymentRequest, ReceivePaymentResponse, RefundRequest, RefundResponse,
+        RegisterWebhookRequest, RegisterWebhookResponse, SendBitcoinRequest, SendBitcoinResponse,
         SendLightningRequest, SendLightningResponse, SendLiquidAddressRequest,
-        SendLiquidAddressResponse, SendLnurlPayRequest, SendLnurlPayResponse,
+        SendLiquidAddressResponse, SendLnurlPayRequest, SendLnurlPayResponse, SignMessageRequest,
+        SignMessageResponse, UnregisterWebhookRequest, UnregisterWebhookResponse,
+        VerifyMessageRequest, VerifyMessageResponse,
     },
 };
 
-pub struct BreezServices {
+pub struct Sdk {
     supported: Vec<PaymentMethodType>,
 }
 
-impl BreezServices {
+impl Sdk {
+    pub async fn accept_payment_proposed_fees(
+        &self,
+        _req: AcceptPaymentProposedFeesRequest,
+    ) -> Result<AcceptPaymentProposedFeesResponse, AcceptPaymentProposedFeesError> {
+        todo!()
+    }
+
+    // pub async fn backup(&self, _req: BackupRequest) -> Result<BackupResponse, BackupError> {
+    //     todo!()
+    // }
+
+    pub async fn buy_bitcoin(
+        &self,
+        _req: BuyBitcoinRequest,
+    ) -> Result<BuyBitcoinResponse, BuyBitcoinError> {
+        todo!()
+    }
+
+    pub async fn fetch_fiat_currencies(
+        &self,
+    ) -> Result<FetchFiatCurrenciesResponse, FetchFiatCurrenciesError> {
+        todo!()
+    }
+
+    pub async fn fetch_fiat_rates(&self) -> Result<FetchFiatRatesResponse, FetchFiatRatesError> {
+        todo!()
+    }
+
+    pub async fn fetch_onchain_limits(
+        &self,
+    ) -> Result<FetchOnchainLimitsResponse, FetchOnchainLimitsError> {
+        todo!()
+    }
+
+    pub async fn fetch_payment_proposed_fees(
+        &self,
+        _req: FetchPaymentProposedFeesRequest,
+    ) -> Result<FetchPaymentProposedFeesResponse, FetchPaymentProposedFeesError> {
+        todo!()
+    }
+
+    pub async fn fetch_recommended_fees(
+        &self,
+    ) -> Result<FetchRecommendedFeesResponse, FetchRecommendedFeesError> {
+        todo!()
+    }
+
+    pub async fn get_payment(&self, _payment_id: &str) -> Result<Payment, GetPaymentError> {
+        todo!()
+    }
+
+    pub async fn initialize_logging(
+        &self,
+        _req: InitializeLoggingRequest,
+    ) -> Result<InitializeLoggingResponse, InitializeLoggingError> {
+        todo!()
+    }
+
+    pub async fn list_payments(
+        &self,
+        _req: ListPaymentsRequest,
+    ) -> Result<ListPaymentsResponse, ListPaymentsError> {
+        todo!()
+    }
+
+    pub async fn list_refundables(&self) -> Result<ListRefundablesResponse, ListRefundablesError> {
+        todo!()
+    }
+
+    pub async fn lnurl_auth(
+        &self,
+        _req: LnurlAuthRequest,
+    ) -> Result<LnurlAuthResponse, LnurlAuthError> {
+        todo!()
+    }
+
     /// Parses the input string and picks a payment method based on the supported payment methods.
     pub async fn parse_and_pick(&self, input: &str) -> Result<PickedInputType, ParseAndPickError> {
         let input = breez_sdk_common::input::parse(input).await?;
@@ -53,6 +144,13 @@ impl BreezServices {
             PaymentRequest::Bip21(bip_21) => expand_bip_21(&bip_21, &self.supported)?,
             PaymentRequest::PaymentMethod(payment_method) => expand_payment_method(payment_method),
         })
+    }
+
+    pub async fn prepare_buy_bitcoin(
+        &self,
+        _req: PrepareBuyBitcoinRequest,
+    ) -> Result<PrepareBuyBitcoinResponse, PrepareBuyBitcoinError> {
+        todo!()
     }
 
     pub async fn prepare_send_bitcoin(
@@ -87,12 +185,38 @@ impl BreezServices {
         todo!()
     }
 
+    pub async fn prepare_refund(
+        &self,
+        _req: PrepareRefundRequest,
+    ) -> Result<PrepareRefundResponse, PrepareRefundError> {
+        todo!()
+    }
+
     pub async fn receive_payment(
         &self,
         _req: ReceivePaymentRequest,
     ) -> Result<ReceivePaymentResponse, ReceivePaymentError> {
         todo!()
     }
+
+    pub async fn refund(&self, _req: RefundRequest) -> Result<RefundResponse, RefundError> {
+        todo!()
+    }
+
+    pub async fn register_wekhook(
+        &self,
+        _req: RegisterWebhookRequest,
+    ) -> Result<RegisterWebhookResponse, RegisterWebhookError> {
+        todo!()
+    }
+
+    // pub async fn rescan(&self, _req: RescanRequest) -> Result<RescanResponse, RescanError> {
+    //     todo!()
+    // }
+
+    // pub async fn restore(&self, _req: RestoreRequest) -> Result<RestoreResponse, RestoreError> {
+    //     todo!()
+    // }
 
     pub async fn send_bitcoin(
         &self,
@@ -119,6 +243,33 @@ impl BreezServices {
         &self,
         _req: SendLiquidAddressRequest,
     ) -> Result<SendLiquidAddressResponse, SendLiquidAddressError> {
+        todo!()
+    }
+
+    /// Sign given message with the private key. Returns a zbase encoded signature.
+    pub async fn sign_message(
+        &self,
+        _req: &SignMessageRequest,
+    ) -> Result<SignMessageResponse, SignMessageError> {
+        todo!()
+    }
+
+    // pub async fn sync(&self) -> Result<SyncResponse, SyncError> {
+    //     todo!()
+    // }
+
+    pub async fn unregister_webhook(
+        &self,
+        _req: UnregisterWebhookRequest,
+    ) -> Result<UnregisterWebhookResponse, UnregisterWebhookError> {
+        todo!()
+    }
+
+    /// Verifies whether given message was signed by the given pubkey and the signature (zbase encoded) is valid.
+    pub async fn verify_message(
+        &self,
+        _req: &VerifyMessageRequest,
+    ) -> Result<VerifyMessageResponse, VerifyMessageError> {
         todo!()
     }
 }
