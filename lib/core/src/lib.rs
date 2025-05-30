@@ -1,4 +1,5 @@
 mod error;
+mod event;
 mod model;
 mod sdk;
 

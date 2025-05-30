@@ -7,6 +7,7 @@ use breez_sdk_common::{
     },
     lnurl::{LnurlCallbackStatus, LnurlErrorData},
 };
+use maybe_sync::{MaybeSend, MaybeSync};
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
@@ -19,6 +20,12 @@ pub struct AcceptPaymentProposedFeesRequest {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct AcceptPaymentProposedFeesResponse {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct AddEventListenerResponse {
+    pub listener_id: String,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
@@ -429,6 +436,34 @@ pub struct RegisterWebhookRequest {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct RegisterWebhookResponse {}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct RemoveEventListenerRequest {
+    pub listener_id: String,
+}
+
+/// Trait that can be used to react to various [`SdkEvent`]s emitted by the SDK.
+#[cfg_attr(feature = "uniffi", uniffi::export(callback_interface))]
+pub trait SdkEventListener: MaybeSend + MaybeSync {
+    fn on_event(&self, e: SdkEvent);
+}
+
+/// Event emitted by the SDK. Add an [`SdkEventListener`] by calling [crate::sdk::Sdk::add_event_listener]
+/// to listen for emitted events.
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
+pub enum SdkEvent {
+    PaymentFailed(Payment),
+    PaymentPending(Payment),
+    PaymentRefundable(Payment),
+    PaymentRefunded(Payment),
+    PaymentRefundPending(Payment),
+    PaymentSucceeded(Payment),
+    PaymentWaitingConfirmation(Payment),
+    PaymentWaitingFeeAcceptance(Payment),
+    Synced,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]

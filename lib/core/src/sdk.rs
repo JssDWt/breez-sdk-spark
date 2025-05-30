@@ -14,22 +14,24 @@ use crate::{
         SendBitcoinError, SendLightningError, SendLiquidAddressError, SendLnurlPayError,
         SignMessageError, UnregisterWebhookError, VerifyMessageError,
     },
+    event::EventManager,
     model::{
-        AcceptPaymentProposedFeesRequest, AcceptPaymentProposedFeesResponse, BitcoinPaymentMethod,
-        BuyBitcoinRequest, BuyBitcoinResponse, FetchFiatCurrenciesResponse, FetchFiatRatesResponse,
-        FetchOnchainLimitsResponse, FetchPaymentProposedFeesRequest,
-        FetchPaymentProposedFeesResponse, FetchRecommendedFeesResponse, InitializeLoggingRequest,
-        InitializeLoggingResponse, LightningPaymentMethod, LightningPaymentRequest,
-        ListPaymentsRequest, ListPaymentsResponse, ListRefundablesResponse, LnurlAuthRequest,
-        LnurlAuthResponse, LnurlPaymentMethod, MilliSatoshi, Payment, PickedInputType,
-        PickedPaymentMethod, PrepareBuyBitcoinRequest, PrepareBuyBitcoinResponse,
-        PrepareReceivePaymentRequest, PrepareReceivePaymentResponse, PrepareRefundRequest,
-        PrepareRefundResponse, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
-        PrepareSendLightningRequest, PrepareSendLightningResponse, PrepareSendLiquidAddressRequest,
-        PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
-        ReceivePaymentRequest, ReceivePaymentResponse, RefundRequest, RefundResponse,
-        RegisterWebhookRequest, RegisterWebhookResponse, SendBitcoinRequest, SendBitcoinResponse,
-        SendLightningRequest, SendLightningResponse, SendLiquidAddressRequest,
+        AcceptPaymentProposedFeesRequest, AcceptPaymentProposedFeesResponse,
+        AddEventListenerResponse, BitcoinPaymentMethod, BuyBitcoinRequest, BuyBitcoinResponse,
+        FetchFiatCurrenciesResponse, FetchFiatRatesResponse, FetchOnchainLimitsResponse,
+        FetchPaymentProposedFeesRequest, FetchPaymentProposedFeesResponse,
+        FetchRecommendedFeesResponse, InitializeLoggingRequest, InitializeLoggingResponse,
+        LightningPaymentMethod, LightningPaymentRequest, ListPaymentsRequest, ListPaymentsResponse,
+        ListRefundablesResponse, LnurlAuthRequest, LnurlAuthResponse, LnurlPaymentMethod,
+        MilliSatoshi, Payment, PickedInputType, PickedPaymentMethod, PrepareBuyBitcoinRequest,
+        PrepareBuyBitcoinResponse, PrepareReceivePaymentRequest, PrepareReceivePaymentResponse,
+        PrepareRefundRequest, PrepareRefundResponse, PrepareSendBitcoinRequest,
+        PrepareSendBitcoinResponse, PrepareSendLightningRequest, PrepareSendLightningResponse,
+        PrepareSendLiquidAddressRequest, PrepareSendLiquidAddressResponse,
+        PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse, ReceivePaymentRequest,
+        ReceivePaymentResponse, RefundRequest, RefundResponse, RegisterWebhookRequest,
+        RegisterWebhookResponse, RemoveEventListenerRequest, SdkEventListener, SendBitcoinRequest,
+        SendBitcoinResponse, SendLightningRequest, SendLightningResponse, SendLiquidAddressRequest,
         SendLiquidAddressResponse, SendLnurlPayRequest, SendLnurlPayResponse, SignMessageRequest,
         SignMessageResponse, UnregisterWebhookRequest, UnregisterWebhookResponse,
         VerifyMessageRequest, VerifyMessageResponse,
@@ -38,6 +40,7 @@ use crate::{
 
 #[cfg_attr(feature = "uniffi", derive(uniffi::Object))]
 pub struct Sdk {
+    event_manager: EventManager,
     supported: Vec<PaymentMethodType>,
 }
 
@@ -48,6 +51,14 @@ impl Sdk {
         _req: AcceptPaymentProposedFeesRequest,
     ) -> Result<AcceptPaymentProposedFeesResponse, AcceptPaymentProposedFeesError> {
         todo!()
+    }
+
+    pub async fn add_event_listener(
+        &self,
+        listener: Box<dyn SdkEventListener>,
+    ) -> AddEventListenerResponse {
+        let listener_id = self.event_manager.add(listener).await;
+        AddEventListenerResponse { listener_id }
     }
 
     // pub async fn backup(&self, _req: BackupRequest) -> Result<BackupResponse, BackupError> {
@@ -210,6 +221,10 @@ impl Sdk {
         _req: RegisterWebhookRequest,
     ) -> Result<RegisterWebhookResponse, RegisterWebhookError> {
         todo!()
+    }
+
+    pub async fn remove_event_listener(&self, req: RemoveEventListenerRequest) -> () {
+        self.event_manager.remove(req.listener_id).await
     }
 
     // pub async fn rescan(&self, _req: RescanRequest) -> Result<RescanResponse, RescanError> {
