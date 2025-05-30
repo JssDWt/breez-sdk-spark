@@ -299,11 +299,13 @@ where
             parse_json(&response).map_err(LnurlError::EndpointError)?;
         let domain = url.host().ok_or(LnurlError::MissingDomain)?.to_string();
         Ok(match lnurl_data {
-            LnurlRequestData::PayRequest { data } => {
-                InputType::PaymentRequest(PaymentRequest::PaymentMethod(PaymentMethod::LnurlPay(
-                    LnurlPayRequest { domain, ..data },
-                )))
-            }
+            LnurlRequestData::PayRequest { data } => InputType::PaymentRequest(
+                PaymentRequest::PaymentMethod(PaymentMethod::LnurlPay(LnurlPayRequest {
+                    domain,
+                    url: url.to_string(),
+                    ..data
+                })),
+            ),
             LnurlRequestData::WithdrawRequest { data } => {
                 InputType::ReceiveRequest(ReceiveRequest::LnurlWithdraw(data))
             }

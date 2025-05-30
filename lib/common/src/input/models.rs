@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::network::Network;
-use crate::utils::default_true;
+use crate::{network::Network, utils::default_true};
 
 /// Wrapper for the decrypted [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -229,6 +228,9 @@ pub struct LnurlPayRequest {
     /// Note: this is not the domain of the callback, but the domain of the LNURL-pay endpoint.
     #[serde(skip)]
     pub domain: String,
+
+    #[serde(skip)]
+    pub url: String,
 
     /// Value indicating whether the recipient supports Nostr Zaps through NIP-57.
     ///

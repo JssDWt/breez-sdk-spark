@@ -1,18 +1,21 @@
 use std::collections::HashMap;
 
 use breez_sdk_common::input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest};
+use tokio::sync::watch;
+use tracing::info;
 
 use crate::{
+    ConnectRequest, GetInfoResponse, LnurlPaymentRequest,
     error::{
-        AcceptPaymentProposedFeesError, BuyBitcoinError, FetchFiatCurrenciesError,
+        AcceptPaymentProposedFeesError, BuyBitcoinError, ConnectError, FetchFiatCurrenciesError,
         FetchFiatRatesError, FetchOnchainLimitsError, FetchPaymentProposedFeesError,
-        FetchRecommendedFeesError, GetPaymentError, InitializeLoggingError, ListPaymentsError,
-        ListRefundablesError, LnurlAuthError, ParseAndPickError, PickPaymentMethodError,
-        PrepareBuyBitcoinError, PrepareReceivePaymentError, PrepareRefundError,
-        PrepareSendBitcoinError, PrepareSendLightningError, PrepareSendLiquidAddressError,
-        PrepareSendLnurlPayError, ReceivePaymentError, RefundError, RegisterWebhookError,
-        SendBitcoinError, SendLightningError, SendLiquidAddressError, SendLnurlPayError,
-        SignMessageError, UnregisterWebhookError, VerifyMessageError,
+        FetchRecommendedFeesError, GetInfoError, GetPaymentError, InitializeLoggingError,
+        ListPaymentsError, ListRefundablesError, LnurlAuthError, ParseAndPickError,
+        PickPaymentMethodError, PrepareBuyBitcoinError, PrepareReceivePaymentError,
+        PrepareRefundError, PrepareSendBitcoinError, PrepareSendLightningError,
+        PrepareSendLiquidAddressError, PrepareSendLnurlPayError, ReceivePaymentError, RefundError,
+        RegisterWebhookError, SendBitcoinError, SendLightningError, SendLiquidAddressError,
+        SendLnurlPayError, SignMessageError, StopError, UnregisterWebhookError, VerifyMessageError,
     },
     event::EventManager,
     model::{
@@ -39,13 +42,27 @@ use crate::{
 };
 
 #[cfg_attr(feature = "uniffi", derive(uniffi::Object))]
-pub struct Sdk {
+pub struct BreezSdk {
     event_manager: EventManager,
+    shutdown_sender: watch::Sender<()>,
     supported: Vec<PaymentMethodType>,
 }
 
 #[cfg_attr(feature = "uniffi", uniffi::export)]
-impl Sdk {
+pub async fn connect(req: ConnectRequest) -> Result<BreezSdk, ConnectError> {
+    todo!()
+}
+
+impl BreezSdk {
+    pub async fn initialize_logging(
+        _req: InitializeLoggingRequest,
+    ) -> Result<InitializeLoggingResponse, InitializeLoggingError> {
+        todo!()
+    }
+}
+
+#[cfg_attr(feature = "uniffi", uniffi::export)]
+impl BreezSdk {
     pub async fn accept_payment_proposed_fees(
         &self,
         _req: AcceptPaymentProposedFeesRequest,
@@ -101,14 +118,11 @@ impl Sdk {
         todo!()
     }
 
-    pub async fn get_payment(&self, _payment_id: &str) -> Result<Payment, GetPaymentError> {
+    pub async fn get_info(&self) -> Result<GetInfoResponse, GetInfoError> {
         todo!()
     }
 
-    pub async fn initialize_logging(
-        &self,
-        _req: InitializeLoggingRequest,
-    ) -> Result<InitializeLoggingResponse, InitializeLoggingError> {
+    pub async fn get_payment(&self, _payment_id: &str) -> Result<Payment, GetPaymentError> {
         todo!()
     }
 
@@ -271,6 +285,24 @@ impl Sdk {
         todo!()
     }
 
+    /// Stops the SDK's background tasks
+    ///
+    /// This method stops the background tasks started by the `start()` method.
+    /// It should be called before your application terminates to ensure proper cleanup.
+    /// When this function returns successfully, the SDK is no longer running and all background tasks have been stopped.
+    ///
+    /// # Returns
+    ///
+    /// Result containing either success or a `StopError` if the background task couldn't be stopped
+    pub async fn stop(&self) -> Result<(), StopError> {
+        self.shutdown_sender
+            .send(())
+            .map_err(|_| StopError::SendSignalFailed)?;
+        self.shutdown_sender.closed().await;
+        info!("Breez SDK stopped successfully");
+        Ok(())
+    }
+
     // pub async fn sync(&self) -> Result<SyncResponse, SyncError> {
     //     todo!()
     // }
@@ -341,13 +373,20 @@ fn expand_payment_method(payment_method: PaymentMethod) -> PickedPaymentMethod {
             })
         }
         PaymentMethod::LightningAddress(lightning_address) => {
-            PickedPaymentMethod::LnurlPay(LnurlPaymentMethod::LightningAddress(lightning_address))
+            PickedPaymentMethod::LnurlPay(LnurlPaymentRequest {
+                request: lightning_address.pay_request,
+                payment_method: LnurlPaymentMethod::LightningAddress(lightning_address.address),
+            })
         }
         PaymentMethod::LiquidAddress(liquid_address) => {
             PickedPaymentMethod::LiquidAddress(liquid_address)
         }
         PaymentMethod::LnurlPay(lnurl_pay_request) => {
-            PickedPaymentMethod::LnurlPay(LnurlPaymentMethod::LnurlPay(lnurl_pay_request))
+            let url = lnurl_pay_request.url.clone();
+            PickedPaymentMethod::LnurlPay(LnurlPaymentRequest {
+                request: lnurl_pay_request,
+                payment_method: LnurlPaymentMethod::LnurlPay(url),
+            })
         }
         PaymentMethod::SilentPaymentAddress(silent_payment_address) => {
             PickedPaymentMethod::Bitcoin(BitcoinPaymentMethod::SilentPaymentAddress(

@@ -11,6 +11,10 @@ pub enum BuyBitcoinError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
+pub enum ConnectError {}
+
+#[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum FetchFiatCurrenciesError {}
 
 #[derive(Debug, Error)]
@@ -28,6 +32,10 @@ pub enum FetchPaymentProposedFeesError {}
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum FetchRecommendedFeesError {}
+
+#[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
+pub enum GetInfoError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -140,6 +148,13 @@ pub enum SendLnurlPayError {}
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum SignMessageError {}
+
+#[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
+pub enum StopError {
+    #[error("Failed to send stop signal")]
+    SendSignalFailed,
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]

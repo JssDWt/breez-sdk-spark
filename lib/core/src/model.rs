@@ -60,6 +60,20 @@ pub struct BuyBitcoinResponse {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct ConnectRequest {
+    pub config: Config,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct Config {
+    pub mnemonic: String,
+    pub network: Network,
+    pub data_dir: String,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct FeeBreakdown {} // TODO: This type may vary across different SDKs.
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -100,6 +114,12 @@ pub struct FetchRecommendedFeesResponse {
     pub hour_fee: u64,
     pub economy_fee: u64,
     pub minimum_fee: u64,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct GetInfoResponse {
+    // TODO
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -170,10 +190,17 @@ pub struct LnurlAuthResponse {
 
 // TODO: Create easier interface for lnurl pay
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct LnurlPaymentRequest {
+    pub request: LnurlPayRequest,
+    pub payment_method: LnurlPaymentMethod,
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum LnurlPaymentMethod {
-    LnurlPay(LnurlPayRequest),
-    LightningAddress(LightningAddress),
+    LnurlPay(String),
+    LightningAddress(String),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -216,6 +243,14 @@ impl crate::UniffiCustomTypeConverter for MilliSatoshi {
 
 #[cfg(feature = "uniffi")]
 uniffi::custom_type!(MilliSatoshi, u64);
+
+#[derive(Clone, Copy, Debug, Display, Eq, PartialEq, Serialize, Deserialize)]
+#[strum(serialize_all = "lowercase")]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
+pub enum Network {
+    Mainnet,
+    Regtest,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
@@ -266,7 +301,7 @@ pub enum PaymentType {
 pub enum PickedPaymentMethod {
     Bitcoin(BitcoinPaymentMethod),
     Lightning(LightningPaymentRequest),
-    LnurlPay(LnurlPaymentMethod),
+    LnurlPay(LnurlPaymentRequest),
     LiquidAddress(LiquidAddress),
 }
 
@@ -325,6 +360,7 @@ pub struct PrepareRefundResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendBitcoinRequest {
     pub method: BitcoinPaymentMethod,
+    pub amount: MilliSatoshi,
     pub fee_rate_sat_per_kw: Option<u32>,
 }
 
@@ -354,8 +390,10 @@ pub struct PrepareSendLightningResponse {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLnurlPayRequest {
-    pub lnurl_pay: LnurlPaymentMethod,
+    pub lnurl_pay: LnurlPaymentRequest,
     pub amount: MilliSatoshi,
+    /// An optional comment for this payment
+    pub comment: Option<String>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
