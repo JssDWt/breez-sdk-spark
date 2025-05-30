@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use breez_sdk_common::{
     ensure_sdk,
+    fiat::FiatAPI,
     input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest},
     utils::Arc,
 };
@@ -51,6 +52,7 @@ pub struct BreezSdk {
     buy_bitcoin_api: Arc<dyn BuyBitcoinApi>,
     config: Config,
     event_manager: EventManager,
+    fiat_api: Arc<dyn FiatAPI>,
     shutdown_sender: watch::Sender<()>,
     supported: Vec<PaymentMethodType>,
 }
@@ -128,11 +130,13 @@ impl BreezSdk {
     pub async fn fetch_fiat_currencies(
         &self,
     ) -> Result<FetchFiatCurrenciesResponse, FetchFiatCurrenciesError> {
-        todo!()
+        let currencies = self.fiat_api.fetch_fiat_currencies().await?;
+        Ok(FetchFiatCurrenciesResponse { currencies })
     }
 
     pub async fn fetch_fiat_rates(&self) -> Result<FetchFiatRatesResponse, FetchFiatRatesError> {
-        todo!()
+        let rates = self.fiat_api.fetch_fiat_rates().await?;
+        Ok(FetchFiatRatesResponse { rates })
     }
 
     pub async fn fetch_onchain_limits(

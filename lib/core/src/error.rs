@@ -1,4 +1,4 @@
-use breez_sdk_common::{buy::moonpay::MoonpayProvider, input::ParseError};
+use breez_sdk_common::{error::ServiceConnectivityError, input::ParseError};
 use thiserror::Error;
 
 use crate::BuyBitcoinProvider;
@@ -41,11 +41,17 @@ pub enum ConnectError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum FetchFiatCurrenciesError {}
+pub enum FetchFiatCurrenciesError {
+    #[error(transparent)]
+    ServiceConnectivity(#[from] ServiceConnectivityError),
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum FetchFiatRatesError {}
+pub enum FetchFiatRatesError {
+    #[error(transparent)]
+    ServiceConnectivity(#[from] ServiceConnectivityError),
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
