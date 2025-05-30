@@ -1,3 +1,4 @@
+mod buy;
 mod error;
 mod event;
 mod model;

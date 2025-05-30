@@ -1,11 +1,16 @@
 use std::collections::HashMap;
 
-use breez_sdk_common::input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest};
+use breez_sdk_common::{
+    ensure_sdk,
+    input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest},
+    utils::Arc,
+};
 use tokio::sync::watch;
 use tracing::info;
 
 use crate::{
-    ConnectRequest, GetInfoResponse, LnurlPaymentRequest,
+    Config, ConnectRequest, GetInfoResponse, LnurlPaymentRequest, Network, ReceiveMethod,
+    buy::BuyBitcoinApi,
     error::{
         AcceptPaymentProposedFeesError, BuyBitcoinError, ConnectError, FetchFiatCurrenciesError,
         FetchFiatRatesError, FetchOnchainLimitsError, FetchPaymentProposedFeesError,
@@ -43,6 +48,8 @@ use crate::{
 
 #[cfg_attr(feature = "uniffi", derive(uniffi::Object))]
 pub struct BreezSdk {
+    buy_bitcoin_api: Arc<dyn BuyBitcoinApi>,
+    config: Config,
     event_manager: EventManager,
     shutdown_sender: watch::Sender<()>,
     supported: Vec<PaymentMethodType>,
@@ -84,9 +91,38 @@ impl BreezSdk {
 
     pub async fn buy_bitcoin(
         &self,
-        _req: BuyBitcoinRequest,
+        req: BuyBitcoinRequest,
     ) -> Result<BuyBitcoinResponse, BuyBitcoinError> {
-        todo!()
+        let amount_sat = req.prepared.req.amount_sat;
+        let amount = MilliSatoshi(amount_sat * 1000);
+        self.validate_buy_bitcoin(amount_sat)?;
+        let receive_result = self
+            .receive_payment(ReceivePaymentRequest {
+                prepared: PrepareReceivePaymentResponse {
+                    req: PrepareReceivePaymentRequest {
+                        amount: MilliSatoshi(amount_sat * 1000),
+                        receive_method: ReceiveMethod::BitcoinAddress,
+                    },
+                    fee: req.prepared.fee,
+                    min_payer_amount: amount,
+                    max_payer_amount: amount,
+                },
+                description: None,
+                use_description_hash: None,
+            })
+            .await?;
+
+        // TODO: The payment request is not a bitcoin address maybe?
+        let url = self
+            .buy_bitcoin_api
+            .buy_bitcoin(
+                req.prepared.req.provider,
+                receive_result.payment_request,
+                amount_sat,
+                req.redirect_url,
+            )
+            .await?;
+        Ok(BuyBitcoinResponse { url })
     }
 
     pub async fn fetch_fiat_currencies(
@@ -175,9 +211,22 @@ impl BreezSdk {
 
     pub async fn prepare_buy_bitcoin(
         &self,
-        _req: PrepareBuyBitcoinRequest,
+        req: PrepareBuyBitcoinRequest,
     ) -> Result<PrepareBuyBitcoinResponse, PrepareBuyBitcoinError> {
-        todo!()
+        let amount_sat = req.amount_sat;
+        self.validate_buy_bitcoin(amount_sat)?;
+
+        let prepared = self
+            .prepare_receive_payment(PrepareReceivePaymentRequest {
+                amount: MilliSatoshi(amount_sat * 1000),
+                receive_method: ReceiveMethod::BitcoinAddress,
+            })
+            .await?;
+
+        Ok(PrepareBuyBitcoinResponse {
+            req,
+            fee: prepared.fee,
+        })
     }
 
     pub async fn prepare_send_bitcoin(
@@ -320,6 +369,23 @@ impl BreezSdk {
         _req: &VerifyMessageRequest,
     ) -> Result<VerifyMessageResponse, VerifyMessageError> {
         todo!()
+    }
+}
+
+impl BreezSdk {
+    fn validate_buy_bitcoin(&self, amount_sat: u64) -> Result<(), PrepareBuyBitcoinError> {
+        ensure_sdk!(
+            self.config.network == Network::Mainnet,
+            PrepareBuyBitcoinError::InvalidNetwork
+        );
+        // The Moonpay API defines BTC amounts as having precision = 5, so only 5 decimals are considered
+        ensure_sdk!(
+            amount_sat % 1_000 == 0,
+            PrepareBuyBitcoinError::InvalidAmount(
+                "Can only buy sat amounts that are multiples of 1000".to_string()
+            )
+        );
+        Ok(())
     }
 }
 

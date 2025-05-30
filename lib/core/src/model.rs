@@ -34,7 +34,7 @@ pub enum BitcoinPaymentMethod {
     SilentPaymentAddress(SilentPaymentAddress),
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, EnumString, PartialEq, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Display, EnumString, PartialEq, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum BuyBitcoinProvider {
     #[strum(serialize = "moonpay")]
@@ -44,7 +44,7 @@ pub enum BuyBitcoinProvider {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct BuyBitcoinRequest {
-    pub prepare_response: PrepareBuyBitcoinResponse,
+    pub prepared: PrepareBuyBitcoinResponse,
 
     /// The optional URL to redirect to after completing the buy.
     ///
@@ -225,7 +225,7 @@ pub struct LnurlPaySuccessData {
     pub success_action: Option<SuccessActionProcessed>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct MilliSatoshi(pub u64); // TODO: This type may vary across different SDKs. It may include assets in liquid for example.
 
 #[cfg(feature = "uniffi")]

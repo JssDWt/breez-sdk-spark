@@ -7,6 +7,7 @@ version.workspace = true
 uniffi = { workspace = true, features = ["build"], optional = true }
 
 [dependencies]
+async-trait.workspace = true
 breez-sdk-common.workspace = true
 breez-sdk-macros.workspace = true
 serde = { workspace = true, features = ["derive"] }

@@ -1,8 +1,7 @@
 use anyhow::anyhow;
-use bitcoin::amount;
 use breez_sdk_spark::{
     BitcoinPaymentMethod, BreezSdk, InputType, LightningPaymentMethod, ListPaymentsRequest,
-    LnurlPaymentMethod, LnurlPaymentRequest, MilliSatoshi, PickedPaymentMethod,
+    LnurlPaymentMethod, MilliSatoshi, PickedPaymentMethod,
     PrepareReceivePaymentRequest, PrepareSendBitcoinRequest, PrepareSendLightningRequest,
     PrepareSendLnurlPayRequest, ReceiveMethod, ReceivePaymentRequest, SendBitcoinRequest,
     SendLightningRequest, SendLnurlPayRequest, parse,

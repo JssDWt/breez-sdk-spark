@@ -5,6 +5,7 @@ version.workspace = true
 
 [build-dependencies]
 uniffi = { workspace = true, features = [ "build" ], optional = true }
+tonic-build = { workspace = true }
 
 [dependencies]
 anyhow.workspace = true
@@ -15,22 +16,30 @@ breez-sdk-macros.workspace = true
 hex.workspace = true
 lightning.workspace = true
 percent-encoding-rfc3986.workspace = true
+prost.workspace = true
 reqwest.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 strum = { workspace = true, features = ["derive"] }
 thiserror.workspace = true
 tokio.workspace = true
+tonic = { workspace = true, features = ["codegen", "prost"] }
 tracing.workspace = true
 uniffi = { workspace = true, optional = true }
 
 [target.'cfg(not(all(target_family = "wasm", target_os = "unknown")))'.dependencies]
 hickory-resolver = { workspace = true, features = ["dnssec-ring"] }
 maybe-sync = { workspace = true, features = ["sync"] }
+tonic = { workspace = true, features = [
+    "tls-ring",
+    "tls-webpki-roots",
+    "transport",
+] }
 
 [target.'cfg(all(target_family = "wasm", target_os = "unknown"))'.dependencies]
 dns-parser.workspace = true
 maybe-sync.workspace = true
+tonic-web-wasm-client.workspace = true
 
 [features]
 uniffi = ["dep:uniffi"]

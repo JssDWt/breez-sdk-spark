@@ -1,5 +1,7 @@
-use breez_sdk_common::input::ParseError;
+use breez_sdk_common::{buy::moonpay::MoonpayProvider, input::ParseError};
 use thiserror::Error;
+
+use crate::BuyBitcoinProvider;
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -7,7 +9,31 @@ pub enum AcceptPaymentProposedFeesError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum BuyBitcoinError {}
+pub enum BuyBitcoinError {
+    #[error("Invalid amount: {0}")]
+    InvalidAmount(String),
+    #[error("Invalid network: can only buy bitcoin on mainnet")]
+    InvalidNetwork,
+    #[error("Provider error: {provider}, error: {error}")]
+    ProviderError {
+        provider: BuyBitcoinProvider,
+        error: String,
+    },
+    #[error(transparent)]
+    ReceiveError(#[from] ReceivePaymentError),
+    #[error("General error: {0}")]
+    General(String),
+}
+
+impl From<PrepareBuyBitcoinError> for BuyBitcoinError {
+    fn from(err: PrepareBuyBitcoinError) -> Self {
+        match err {
+            PrepareBuyBitcoinError::InvalidAmount(amount) => BuyBitcoinError::InvalidAmount(amount),
+            PrepareBuyBitcoinError::InvalidNetwork => BuyBitcoinError::InvalidNetwork,
+            PrepareBuyBitcoinError::ReceiveError(err) => BuyBitcoinError::General(err.to_string()),
+        }
+    }
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -85,17 +111,20 @@ pub enum PickPaymentMethodError {
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareSendBitcoinError {
-    #[error("Invalid address")]
-    InvalidAddress,
-
-    #[error("Invalid network")]
-    InvalidNetwork,
-}
+pub enum PrepareSendBitcoinError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareBuyBitcoinError {}
+pub enum PrepareBuyBitcoinError {
+    #[error("Invalid amount: {0}")]
+    InvalidAmount(String),
+
+    #[error("Invalid network")]
+    InvalidNetwork,
+
+    #[error(transparent)]
+    ReceiveError(#[from] PrepareReceivePaymentError),
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
