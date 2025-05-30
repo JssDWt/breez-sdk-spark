@@ -87,10 +87,6 @@ pub enum ListRefundablesError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum LnurlAuthError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum ParseAndPickError {
     #[error("Error parsing input: {0}")]
     Parse(ParseError),

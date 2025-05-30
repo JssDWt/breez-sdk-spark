@@ -1,3 +1,6 @@
+pub mod auth;
+pub mod error;
+
 use serde::{Deserialize, Serialize};
 
 /// Contains the result of the entire LNURL interaction, as reported by the LNURL endpoint.

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::error::ServiceConnectivityError;
+use crate::{error::ServiceConnectivityError, lnurl::error::LnurlError};
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
@@ -33,29 +33,6 @@ impl Bip21Error {
     pub fn multiple_params(name: &str) -> Self {
         Self::MultipleParams(name.to_string())
     }
-}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum LnurlError {
-    #[error("lnurl missing k1 parameter")]
-    MissingK1,
-    #[error("lnurl contains invalid k1 parameter")]
-    InvalidK1,
-    #[error("lnurl contains unsupported action")]
-    UnsupportedAction,
-    #[error("lnurl missing domain")]
-    MissingDomain,
-    #[error("error calling lnurl endpoint: {0}")]
-    EndpointError(ServiceConnectivityError),
-    #[error("lnurl has http scheme without onion domain")]
-    HttpSchemeWithoutOnionDomain,
-    #[error("lnurl has https scheme with onion domain")]
-    HttpsSchemeWithOnionDomain,
-    #[error("lnurl error: {0}")]
-    General(String),
-    #[error("lnurl has unknown scheme")]
-    UnknownScheme,
 }
 
 #[derive(Debug)]

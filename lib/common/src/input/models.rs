@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{network::Network, utils::default_true};
+use crate::{lnurl::auth::LnurlAuthRequestData, network::Network, utils::default_true};
 
 /// Wrapper for the decrypted [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -181,26 +181,6 @@ pub struct LiquidAddress {
     pub address: String,
     pub network: Network,
     pub source: PaymentRequestSource,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct LnurlAuthRequestData {
-    /// Hex encoded 32 bytes of challenge
-    pub k1: String,
-
-    /// When available, one of: register, login, link, auth
-    pub action: Option<String>,
-
-    /// Indicates the domain of the LNURL-auth service, to be shown to the user when asking for
-    /// auth confirmation, as per LUD-04 spec.
-    #[serde(skip_serializing, skip_deserializing)]
-    pub domain: String,
-
-    /// Indicates the URL of the LNURL-auth service, including the query arguments. This will be
-    /// extended with the signed challenge and the linking key, then called in the second step of the workflow.
-    #[serde(skip_serializing, skip_deserializing)]
-    pub url: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

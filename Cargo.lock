@@ -381,6 +381,7 @@ name = "breez-sdk-spark"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bitcoin",
  "breez-sdk-common",
  "breez-sdk-macros",
  "maybe-sync",

@@ -1,11 +1,10 @@
 use breez_sdk_common::{
     fiat::{FiatCurrency, Rate},
     input::{
-        BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LightningAddress, LiquidAddress,
-        LnurlAuthRequestData, LnurlPayRequest, PaymentMethod, ReceiveRequest, SilentPaymentAddress,
-        SuccessActionProcessed,
+        BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LiquidAddress, LnurlPayRequest,
+        PaymentMethod, ReceiveRequest, SilentPaymentAddress, SuccessActionProcessed,
     },
-    lnurl::{LnurlCallbackStatus, LnurlErrorData},
+    lnurl::{LnurlCallbackStatus, LnurlErrorData, auth::LnurlAuthRequestData},
 };
 use maybe_sync::{MaybeSend, MaybeSync};
 use serde::{Deserialize, Serialize};

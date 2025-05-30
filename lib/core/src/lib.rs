@@ -1,6 +1,7 @@
 mod buy;
 mod error;
 mod event;
+mod lnurl;
 mod model;
 mod sdk;
 

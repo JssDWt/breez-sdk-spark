@@ -1,2 +1,2 @@
 mod rest_client;
-pub use rest_client::{ReqwestRestClient, RestClient};
+pub use rest_client::{ReqwestRestClient, RestClient, parse_json};

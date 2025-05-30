@@ -4,6 +4,8 @@ use breez_sdk_common::{
     ensure_sdk,
     fiat::FiatAPI,
     input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest},
+    lnurl::{auth::perform_lnurl_auth, error::LnurlError},
+    rest::RestClient,
     utils::Arc,
 };
 use tokio::sync::watch;
@@ -24,6 +26,7 @@ use crate::{
         SendLnurlPayError, SignMessageError, StopError, UnregisterWebhookError, VerifyMessageError,
     },
     event::EventManager,
+    lnurl::LnurlAuthSigner,
     model::{
         AcceptPaymentProposedFeesRequest, AcceptPaymentProposedFeesResponse,
         AddEventListenerResponse, BitcoinPaymentMethod, BuyBitcoinRequest, BuyBitcoinResponse,
@@ -53,6 +56,8 @@ pub struct BreezSdk {
     config: Config,
     event_manager: EventManager,
     fiat_api: Arc<dyn FiatAPI>,
+    lnurl_auth_signer: Arc<LnurlAuthSigner>,
+    rest_client: Arc<dyn RestClient>,
     shutdown_sender: watch::Sender<()>,
     supported: Vec<PaymentMethodType>,
 }
@@ -177,11 +182,14 @@ impl BreezSdk {
         todo!()
     }
 
-    pub async fn lnurl_auth(
-        &self,
-        _req: LnurlAuthRequest,
-    ) -> Result<LnurlAuthResponse, LnurlAuthError> {
-        todo!()
+    pub async fn lnurl_auth(&self, req: LnurlAuthRequest) -> Result<LnurlAuthResponse, LnurlError> {
+        let callback_status = perform_lnurl_auth(
+            self.rest_client.as_ref(),
+            &req.data,
+            self.lnurl_auth_signer.as_ref(),
+        )
+        .await?;
+        Ok(LnurlAuthResponse { callback_status })
     }
 
     /// Parses the input string and picks a payment method based on the supported payment methods.

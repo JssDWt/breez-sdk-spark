@@ -8,16 +8,20 @@ use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
     input::{Bip21Extra, ParseError, PaymentMethod, PaymentRequest, PaymentRequestSource},
-    lnurl::LnurlErrorData,
+    lnurl::{
+        LnurlErrorData,
+        auth::{self, LnurlAuthRequestData},
+        error::LnurlError,
+    },
     rest::{ReqwestRestClient, RestClient},
 };
 
 use super::{
     Bip21, BitcoinAddress, Bolt11RouteHint, Bolt11RouteHintHop, Bolt12InvoiceRequest, Bolt12Offer,
     Bolt12OfferBlindedPath, DetailedBolt11Invoice, DetailedBolt12Invoice, DetailedBolt12Offer,
-    InputType, LightningAddress, LnurlAuthRequestData, LnurlPayRequest, LnurlWithdrawRequestData,
-    ReceiveRequest, SilentPaymentAddress,
-    error::{Bip21Error, LnurlError, ParseResult},
+    InputType, LightningAddress, LnurlPayRequest, LnurlWithdrawRequestData, ReceiveRequest,
+    SilentPaymentAddress,
+    error::{Bip21Error, ParseResult},
 };
 
 const BIP_21_PREFIX: &str = "bitcoin:";
@@ -285,7 +289,7 @@ where
     ) -> Result<InputType, LnurlError> {
         if let Some(query) = url.query() {
             if query.contains("tag=login") {
-                let data = validate_lnurl_request(url)?;
+                let data = auth::validate_request(url)?;
                 return Ok(InputType::LnurlAuth(data));
             }
         }
@@ -735,7 +739,6 @@ fn validate_lnurl_request(url: &reqwest::Url) -> Result<LnurlAuthRequestData, Ln
         .find(|(key, _)| key == "action")
         .map(|(_, v)| v.to_string());
 
-    println!("k1: {k1}, action: {maybe_action:?}");
     let k1_bytes = hex::decode(&k1).map_err(|_| LnurlError::InvalidK1)?;
     if k1_bytes.len() != 32 {
         return Err(LnurlError::InvalidK1);
