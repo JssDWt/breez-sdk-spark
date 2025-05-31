@@ -1,6 +1,6 @@
 UNAME := $(shell uname)
 FFI_DIR := ffi/
-BIN_NAME := libbreez_sdk_bindings
+BIN_NAME := libbreez_sdk_spark_bindings
 TARGET_DIR := ../../target/
 RELEASE_DIR := $(TARGET_DIR)release
 
