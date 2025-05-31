@@ -76,26 +76,42 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Build bindings
-        working-directory: lib/bindings
-        run: cargo build --release
 
-      - name: Build Swift binding
-        if: ${{ inputs.swift }}
-        working-directory: lib/bindings
-        run: make swift
+      - name: Build C# binding
+        if: ${{ inputs.csharp }}
+        run: make bindings-csharp
 
-      - name: Archive Swift binding
-        if: ${{ inputs.swift }}
+      - name: Archive C# binding
+        if: ${{ inputs.csharp }}
         uses: actions/upload-artifact@v4
         with:
-          name: bindings-swift
-          path: lib/bindings/ffi/swift/*
+          name: bindings-csharp
+          path: lib/bindings/ffi/csharp/*
+
+      - name: Build Kotlin binding
+        if: ${{ inputs.kotlin }}
+        run: make bindings-kotlin
+
+      - name: Archive Kotlin binding
+        if: ${{ inputs.kotlin }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-kotlin
+          path: lib/bindings/ffi/kotlin/*
+
+      - name: Build Kotlin multiplatform binding
+        if: ${{ inputs.kotlin }}
+        run: make bindings-kotlin-multiplatform
+
+      - name: Archive Kotlin multiplatform binding
+        if: ${{ inputs.kotlin }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-kotlin-multiplatform
+          path: lib/bindings/ffi/kotlin-multiplatform/*
 
       - name: Build Python binding
         if: ${{ inputs.python }}
-        working-directory: lib/bindings
         run: make bindings-python
 
       - name: Archive Python binding
@@ -104,3 +120,15 @@ jobs:
         with:
           name: bindings-python
           path: lib/bindings/ffi/python/breez_sdk_spark.py
+
+      - name: Build Swift binding
+        if: ${{ inputs.swift }}
+        run: make bindings-swift
+
+      - name: Archive Swift binding
+        if: ${{ inputs.swift }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindings-swift
+          path: lib/bindings/ffi/swift/*
+

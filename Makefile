@@ -8,6 +8,24 @@ $(SUBDIRS):
 
 default: check
 
+bindings-csharp: 
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
+bindings-go: 
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
+bindings-kotlin-multiplatform:
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
+bindings-kotlin:
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
+bindings-python:
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
+bindings-swift:
+	$(MAKE) -C lib $(MAKECMDGOALS)
+
 build: $(SUBDIRS)
 
 build-wasm: $(WASM_SUBDIRS)
