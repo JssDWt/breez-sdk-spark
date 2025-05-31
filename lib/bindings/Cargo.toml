@@ -8,7 +8,7 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 
 [lib]
-name = "breez_sdk_bindings"
+name = "breez_sdk_spark_bindings"
 crate-type = ["staticlib", "cdylib", "lib"]
 
 [dependencies]
