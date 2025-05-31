@@ -9,6 +9,10 @@ default: check
 
 build: $(SUBDIRS)
 
+build-release: $(SUBDIRS)
+
+build-wasm: $(SUBDIRS)
+
 check: fmt-check clippy-check test
 
 clippy: clippy-check
@@ -26,3 +30,5 @@ fmt-fix: $(SUBDIRS)
 fmt-check: $(SUBDIRS)
 
 test: $(SUBDIRS)
+
+wasm-clippy-check: $(SUBDIRS)

@@ -3,6 +3,8 @@ use dns_parser::{Builder, Packet, RData, ResponseCode};
 use dns_parser::{QueryClass, QueryType};
 use reqwest::Client;
 
+use super::DnsResolver;
+
 pub struct Resolver;
 
 impl Resolver {

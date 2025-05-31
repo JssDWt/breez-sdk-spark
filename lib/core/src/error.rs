@@ -1,4 +1,6 @@
-use breez_sdk_common::{error::ServiceConnectivityError, input::ParseError};
+use breez_sdk_common::{
+    error::ServiceConnectivityError, input::ParseError, lnurl::error::LnurlError,
+};
 use thiserror::Error;
 
 use crate::BuyBitcoinProvider;
@@ -84,6 +86,13 @@ pub enum ListPaymentsError {}
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum ListRefundablesError {}
+
+#[derive(Debug, Error)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
+pub enum LnurlAuthError {
+    #[error(transparent)]
+    LnurlError(#[from] LnurlError),
+}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]

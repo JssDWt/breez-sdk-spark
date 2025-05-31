@@ -21,7 +21,7 @@ impl Display for Status {
 #[macro_export]
 macro_rules! with_connection_retry {
     ($f:expr) => {{
-        use log::debug;
+        use tracing::debug;
 
         async {
             let res = $f.await;

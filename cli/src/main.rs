@@ -106,7 +106,7 @@ async fn run_interactive_mode(data_dir: PathBuf, network: Network) -> Result<()>
     let sdk = breez_sdk_spark::connect(ConnectRequest { config }).await?;
 
     let listener = Box::new(CliEventListener {});
-    sdk.add_event_listener(listener);
+    sdk.add_event_listener(listener).await;
 
     println!("Breez SDK CLI Interactive Mode");
     println!("Type 'help' for available commands or 'exit' to quit");

@@ -1,10 +1,10 @@
 use anyhow::anyhow;
 use breez_sdk_spark::{
     BitcoinPaymentMethod, BreezSdk, InputType, LightningPaymentMethod, ListPaymentsRequest,
-    LnurlPaymentMethod, MilliSatoshi, PickedPaymentMethod,
-    PrepareReceivePaymentRequest, PrepareSendBitcoinRequest, PrepareSendLightningRequest,
-    PrepareSendLnurlPayRequest, ReceiveMethod, ReceivePaymentRequest, SendBitcoinRequest,
-    SendLightningRequest, SendLnurlPayRequest, parse,
+    LnurlPaymentMethod, PickedPaymentMethod, PrepareReceivePaymentRequest,
+    PrepareSendBitcoinRequest, PrepareSendLightningRequest, PrepareSendLnurlPayRequest,
+    ReceiveMethod, ReceivePaymentRequest, SendBitcoinRequest, SendLightningRequest,
+    SendLnurlPayRequest, parse,
 };
 use clap::Parser;
 use rustyline::{
@@ -136,7 +136,7 @@ pub(crate) async fn execute_command(
                     )?;
                     let prepared = sdk
                         .prepare_send_bitcoin(PrepareSendBitcoinRequest {
-                            amount: MilliSatoshi(amount * 1000),
+                            amount_msat: amount * 1000,
                             method: bitcoin_payment_method,
                             fee_rate_sat_per_kw: Some(rate.parse()?),
                         })
@@ -159,9 +159,9 @@ pub(crate) async fn execute_command(
                         }
                     }
 
-                    let amount = match (
-                        lightning_payment_request.min_amount.0,
-                        lightning_payment_request.max_amount.0,
+                    let amount_msat = match (
+                        lightning_payment_request.min_amount_msat,
+                        lightning_payment_request.max_amount_msat,
                     ) {
                         (min, max) if min > 0 && min == max => min,
                         (min, max) => {
@@ -175,7 +175,7 @@ pub(crate) async fn execute_command(
                     let prepared = sdk
                         .prepare_send_lightning(PrepareSendLightningRequest {
                             payment_request: lightning_payment_request,
-                            amount: MilliSatoshi(amount),
+                            amount_msat,
                         })
                         .await?;
                     let result = sdk
@@ -192,7 +192,7 @@ pub(crate) async fn execute_command(
                         }
                     }
 
-                    let amount = match (
+                    let amount_msat = match (
                         lnurl_payment_request.request.min_sendable,
                         lnurl_payment_request.request.max_sendable,
                     ) {
@@ -211,7 +211,7 @@ pub(crate) async fn execute_command(
                     let prepared = sdk
                         .prepare_send_lnurl_pay(PrepareSendLnurlPayRequest {
                             lnurl_pay: lnurl_payment_request,
-                            amount: MilliSatoshi(amount),
+                            amount_msat,
                             comment,
                         })
                         .await?;
@@ -219,7 +219,7 @@ pub(crate) async fn execute_command(
                     print_value(&result)?;
                     Ok(true)
                 }
-                PickedPaymentMethod::LiquidAddress(liquid_address) => todo!(),
+                PickedPaymentMethod::LiquidAddress(_liquid_address) => todo!(),
             }
         }
         Command::ReceiveOnchain => {
@@ -228,7 +228,7 @@ pub(crate) async fn execute_command(
             let prepared = sdk
                 .prepare_receive_payment(PrepareReceivePaymentRequest {
                     receive_method: ReceiveMethod::BitcoinAddress,
-                    amount: MilliSatoshi(amount * 1000),
+                    amount_msat: amount * 1000,
                 })
                 .await?;
             let line = rl.readline("description (optional)")?;
@@ -247,7 +247,7 @@ pub(crate) async fn execute_command(
             let prepared = sdk
                 .prepare_receive_payment(PrepareReceivePaymentRequest {
                     receive_method: ReceiveMethod::Bolt11Invoice,
-                    amount: MilliSatoshi(amount * 1000),
+                    amount_msat: amount * 1000,
                 })
                 .await?;
             let result = sdk

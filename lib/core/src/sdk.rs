@@ -4,7 +4,7 @@ use breez_sdk_common::{
     ensure_sdk,
     fiat::FiatAPI,
     input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest},
-    lnurl::{auth::perform_lnurl_auth, error::LnurlError},
+    lnurl::auth::perform_lnurl_auth,
     rest::RestClient,
     utils::Arc,
 };
@@ -18,12 +18,12 @@ use crate::{
         AcceptPaymentProposedFeesError, BuyBitcoinError, ConnectError, FetchFiatCurrenciesError,
         FetchFiatRatesError, FetchOnchainLimitsError, FetchPaymentProposedFeesError,
         FetchRecommendedFeesError, GetInfoError, GetPaymentError, InitializeLoggingError,
-        ListPaymentsError, ListRefundablesError, ParseAndPickError, PickPaymentMethodError,
-        PrepareBuyBitcoinError, PrepareReceivePaymentError, PrepareRefundError,
-        PrepareSendBitcoinError, PrepareSendLightningError, PrepareSendLiquidAddressError,
-        PrepareSendLnurlPayError, ReceivePaymentError, RefundError, RegisterWebhookError,
-        SendBitcoinError, SendLightningError, SendLiquidAddressError, SendLnurlPayError,
-        SignMessageError, StopError, UnregisterWebhookError, VerifyMessageError,
+        ListPaymentsError, ListRefundablesError, LnurlAuthError, ParseAndPickError,
+        PickPaymentMethodError, PrepareBuyBitcoinError, PrepareReceivePaymentError,
+        PrepareRefundError, PrepareSendBitcoinError, PrepareSendLightningError,
+        PrepareSendLiquidAddressError, PrepareSendLnurlPayError, ReceivePaymentError, RefundError,
+        RegisterWebhookError, SendBitcoinError, SendLightningError, SendLiquidAddressError,
+        SendLnurlPayError, SignMessageError, StopError, UnregisterWebhookError, VerifyMessageError,
     },
     event::EventManager,
     lnurl::LnurlAuthSigner,
@@ -34,19 +34,19 @@ use crate::{
         FetchPaymentProposedFeesRequest, FetchPaymentProposedFeesResponse,
         FetchRecommendedFeesResponse, InitializeLoggingRequest, InitializeLoggingResponse,
         LightningPaymentMethod, LightningPaymentRequest, ListPaymentsRequest, ListPaymentsResponse,
-        ListRefundablesResponse, LnurlAuthRequest, LnurlAuthResponse, LnurlPaymentMethod,
-        MilliSatoshi, Payment, PickedInputType, PickedPaymentMethod, PrepareBuyBitcoinRequest,
-        PrepareBuyBitcoinResponse, PrepareReceivePaymentRequest, PrepareReceivePaymentResponse,
-        PrepareRefundRequest, PrepareRefundResponse, PrepareSendBitcoinRequest,
-        PrepareSendBitcoinResponse, PrepareSendLightningRequest, PrepareSendLightningResponse,
-        PrepareSendLiquidAddressRequest, PrepareSendLiquidAddressResponse,
-        PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse, ReceivePaymentRequest,
-        ReceivePaymentResponse, RefundRequest, RefundResponse, RegisterWebhookRequest,
-        RegisterWebhookResponse, RemoveEventListenerRequest, SdkEventListener, SendBitcoinRequest,
-        SendBitcoinResponse, SendLightningRequest, SendLightningResponse, SendLiquidAddressRequest,
-        SendLiquidAddressResponse, SendLnurlPayRequest, SendLnurlPayResponse, SignMessageRequest,
-        SignMessageResponse, UnregisterWebhookRequest, UnregisterWebhookResponse,
-        VerifyMessageRequest, VerifyMessageResponse,
+        ListRefundablesResponse, LnurlAuthRequest, LnurlAuthResponse, LnurlPaymentMethod, Payment,
+        PickedInputType, PickedPaymentMethod, PrepareBuyBitcoinRequest, PrepareBuyBitcoinResponse,
+        PrepareReceivePaymentRequest, PrepareReceivePaymentResponse, PrepareRefundRequest,
+        PrepareRefundResponse, PrepareSendBitcoinRequest, PrepareSendBitcoinResponse,
+        PrepareSendLightningRequest, PrepareSendLightningResponse, PrepareSendLiquidAddressRequest,
+        PrepareSendLiquidAddressResponse, PrepareSendLnurlPayRequest, PrepareSendLnurlPayResponse,
+        ReceivePaymentRequest, ReceivePaymentResponse, RefundRequest, RefundResponse,
+        RegisterWebhookRequest, RegisterWebhookResponse, RemoveEventListenerRequest,
+        SdkEventListener, SendBitcoinRequest, SendBitcoinResponse, SendLightningRequest,
+        SendLightningResponse, SendLiquidAddressRequest, SendLiquidAddressResponse,
+        SendLnurlPayRequest, SendLnurlPayResponse, SignMessageRequest, SignMessageResponse,
+        UnregisterWebhookRequest, UnregisterWebhookResponse, VerifyMessageRequest,
+        VerifyMessageResponse,
     },
 };
 
@@ -63,7 +63,7 @@ pub struct BreezSdk {
 }
 
 #[cfg_attr(feature = "uniffi", uniffi::export)]
-pub async fn connect(req: ConnectRequest) -> Result<BreezSdk, ConnectError> {
+pub async fn connect(_req: ConnectRequest) -> Result<BreezSdk, ConnectError> {
     todo!()
 }
 
@@ -101,18 +101,18 @@ impl BreezSdk {
         req: BuyBitcoinRequest,
     ) -> Result<BuyBitcoinResponse, BuyBitcoinError> {
         let amount_sat = req.prepared.req.amount_sat;
-        let amount = MilliSatoshi(amount_sat * 1000);
+        let amount_msat = amount_sat * 1000;
         self.validate_buy_bitcoin(amount_sat)?;
         let receive_result = self
             .receive_payment(ReceivePaymentRequest {
                 prepared: PrepareReceivePaymentResponse {
                     req: PrepareReceivePaymentRequest {
-                        amount: MilliSatoshi(amount_sat * 1000),
+                        amount_msat,
                         receive_method: ReceiveMethod::BitcoinAddress,
                     },
-                    fee: req.prepared.fee,
-                    min_payer_amount: amount,
-                    max_payer_amount: amount,
+                    fee_msat: req.prepared.fee_msat,
+                    min_payer_amount_msat: amount_msat,
+                    max_payer_amount_msat: amount_msat,
                 },
                 description: None,
                 use_description_hash: None,
@@ -182,7 +182,10 @@ impl BreezSdk {
         todo!()
     }
 
-    pub async fn lnurl_auth(&self, req: LnurlAuthRequest) -> Result<LnurlAuthResponse, LnurlError> {
+    pub async fn lnurl_auth(
+        &self,
+        req: LnurlAuthRequest,
+    ) -> Result<LnurlAuthResponse, LnurlAuthError> {
         let callback_status = perform_lnurl_auth(
             self.rest_client.as_ref(),
             &req.data,
@@ -230,14 +233,14 @@ impl BreezSdk {
 
         let prepared = self
             .prepare_receive_payment(PrepareReceivePaymentRequest {
-                amount: MilliSatoshi(amount_sat * 1000),
+                amount_msat: amount_sat * 1000,
                 receive_method: ReceiveMethod::BitcoinAddress,
             })
             .await?;
 
         Ok(PrepareBuyBitcoinResponse {
             req,
-            fee: prepared.fee,
+            fee_msat: prepared.fee_msat,
         })
     }
 
@@ -431,22 +434,22 @@ fn expand_payment_method(payment_method: PaymentMethod) -> PickedPaymentMethod {
         }
         PaymentMethod::Bolt11Invoice(bolt11_invoice) => {
             PickedPaymentMethod::Lightning(LightningPaymentRequest {
-                max_amount: MilliSatoshi(bolt11_invoice.amount_msat.unwrap_or(u64::MAX)), // TODO: Set max amount to sane value.
-                min_amount: MilliSatoshi(bolt11_invoice.amount_msat.unwrap_or(0)), // TODO: Set min amount to minimum payable amount.
+                max_amount_msat: bolt11_invoice.amount_msat.unwrap_or(u64::MAX), // TODO: Set max amount to sane value.
+                min_amount_msat: bolt11_invoice.amount_msat.unwrap_or(0), // TODO: Set min amount to minimum payable amount.
                 method: LightningPaymentMethod::Bolt11Invoice(bolt11_invoice.invoice),
             })
         }
         PaymentMethod::Bolt12Invoice(bolt12_invoice) => {
             PickedPaymentMethod::Lightning(LightningPaymentRequest {
-                max_amount: MilliSatoshi(bolt12_invoice.amount_msat),
-                min_amount: MilliSatoshi(bolt12_invoice.amount_msat),
+                max_amount_msat: bolt12_invoice.amount_msat,
+                min_amount_msat: bolt12_invoice.amount_msat,
                 method: LightningPaymentMethod::Bolt12Invoice(bolt12_invoice.invoice),
             })
         }
         PaymentMethod::Bolt12Offer(bolt12_offer) => {
             PickedPaymentMethod::Lightning(LightningPaymentRequest {
-                max_amount: MilliSatoshi(u64::MAX), // TODO: Set max amount to sane value.
-                min_amount: MilliSatoshi(0), // TODO: Set min amount to minimum payable amount.
+                max_amount_msat: u64::MAX, // TODO: Set max amount to sane value.
+                min_amount_msat: 0,        // TODO: Set min amount to minimum payable amount.
                 method: LightningPaymentMethod::Bolt12Offer(bolt12_offer.offer),
             })
         }

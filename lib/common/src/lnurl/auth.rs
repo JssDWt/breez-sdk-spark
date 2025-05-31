@@ -3,6 +3,7 @@ use std::str::FromStr;
 use bitcoin::bip32::{ChildNumber, Xpub};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
+use tracing::{error, warn};
 
 use crate::rest::{RestClient, parse_json};
 
@@ -60,20 +61,28 @@ pub async fn perform_lnurl_auth<C: RestClient + ?Sized, S: LnurlAuthSigner>(
     req_data: &LnurlAuthRequestData,
     signer: &S,
 ) -> LnurlResult<LnurlCallbackStatus> {
-    let url = Url::from_str(&req_data.url).map_err(|e| LnurlError::InvalidUri)?;
+    let url = Url::from_str(&req_data.url).map_err(|e| {
+        warn!("Lnurl auth URL is invalid: {:?}", e);
+        LnurlError::InvalidUri
+    })?;
     let derivation_path = get_derivation_path(signer, url).await?;
     let sig = signer
         .sign_ecdsa(
-            &hex::decode(&req_data.k1).map_err(|e| LnurlError::InvalidK1)?,
+            &hex::decode(&req_data.k1).map_err(|_| LnurlError::InvalidK1)?,
             &derivation_path,
         )
         .await?;
     let xpub_bytes = signer.derive_bip32_pub_key(&derivation_path).await?;
-    let xpub = Xpub::decode(xpub_bytes.as_slice())
-        .map_err(|e| LnurlError::General("failed to decode xpub".to_string()))?;
+    let xpub = Xpub::decode(xpub_bytes.as_slice()).map_err(|e| {
+        error!("Failed to decode xpub: {:?}", e);
+        LnurlError::General("failed to decode xpub".to_string())
+    })?;
 
     // <LNURL_hostname_and_path>?<LNURL_existing_query_parameters>&sig=<hex(sign(utf8ToBytes(k1), linkingPrivKey))>&key=<hex(linkingKey)>
-    let mut callback_url = Url::from_str(&req_data.url).map_err(|e| LnurlError::InvalidUri)?;
+    let mut callback_url = Url::from_str(&req_data.url).map_err(|e| {
+        warn!("Lnurl auth callback URL is invalid: {:?}", e);
+        LnurlError::InvalidUri
+    })?;
     callback_url
         .query_pairs_mut()
         .append_pair("sig", &hex::encode(&sig));
@@ -124,7 +133,7 @@ pub async fn get_derivation_path<S: LnurlAuthSigner>(
     let domain = url.domain().ok_or(LnurlError::InvalidUri)?;
 
     let c138 = ChildNumber::from_hardened_idx(138)
-        .map_err(|e| LnurlError::General("failed to derive child auth key".to_string()))?;
+        .map_err(|_| LnurlError::General("failed to derive child auth key".to_string()))?;
     let hmac = signer
         .hmac_sha256(&[c138, ChildNumber::from(0)], domain.as_bytes())
         .await?;

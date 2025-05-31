@@ -1,5 +1,6 @@
 use bitcoin::{Address, Denomination, address::NetworkUnchecked};
 use lightning::bolt11_invoice::Bolt11InvoiceDescriptionRef;
+use maybe_sync::{MaybeSend, MaybeSync};
 use percent_encoding_rfc3986::percent_decode_str;
 use serde::Deserialize;
 use tracing::{debug, error};
@@ -43,8 +44,8 @@ pub struct InputParser<C, D> {
 
 impl<C, D> InputParser<C, D>
 where
-    C: RestClient + Send + Sync,
-    D: DnsResolver + Send + Sync,
+    C: RestClient + MaybeSend + MaybeSync,
+    D: DnsResolver + MaybeSend + MaybeSync,
 {
     pub fn new(dns_resolver: D, rest_client: C) -> Self {
         InputParser {
@@ -298,9 +299,9 @@ where
             .rest_client
             .get(url.as_ref())
             .await
-            .map_err(LnurlError::EndpointError)?;
+            .map_err(LnurlError::ServiceConnectivity)?;
         let lnurl_data: LnurlRequestData =
-            parse_json(&response).map_err(LnurlError::EndpointError)?;
+            parse_json(&response).map_err(LnurlError::ServiceConnectivity)?;
         let domain = url.host().ok_or(LnurlError::MissingDomain)?.to_string();
         Ok(match lnurl_data {
             LnurlRequestData::PayRequest { data } => InputType::PaymentRequest(
@@ -314,7 +315,7 @@ where
                 InputType::ReceiveRequest(ReceiveRequest::LnurlWithdraw(data))
             }
             LnurlRequestData::AuthRequest { data } => InputType::LnurlAuth(data),
-            LnurlRequestData::Error { data: _ } => todo!(),
+            LnurlRequestData::Error { data } => return Err(LnurlError::EndpointError(data.reason)),
         })
     }
 }
@@ -725,39 +726,6 @@ fn parse_silent_payment_address(
     None
 }
 
-fn validate_lnurl_request(url: &reqwest::Url) -> Result<LnurlAuthRequestData, LnurlError> {
-    let query_pairs = url.query_pairs();
-
-    let k1 = query_pairs
-        .into_iter()
-        .find(|(key, _)| key == "k1")
-        .map(|(_, v)| v.to_string())
-        .ok_or(LnurlError::MissingK1)?;
-
-    let maybe_action = query_pairs
-        .into_iter()
-        .find(|(key, _)| key == "action")
-        .map(|(_, v)| v.to_string());
-
-    let k1_bytes = hex::decode(&k1).map_err(|_| LnurlError::InvalidK1)?;
-    if k1_bytes.len() != 32 {
-        return Err(LnurlError::InvalidK1);
-    }
-
-    if let Some(action) = &maybe_action {
-        if !["register", "login", "link", "auth"].contains(&action.as_str()) {
-            return Err(LnurlError::UnsupportedAction);
-        }
-    }
-
-    Ok(LnurlAuthRequestData {
-        k1,
-        action: maybe_action,
-        domain: url.domain().ok_or(LnurlError::MissingDomain)?.to_string(),
-        url: url.to_string(),
-    })
-}
-
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(untagged)]
@@ -1145,8 +1113,8 @@ mod tests {
         println!("Debug - valid bip21 address result for '{bip21_addr}': {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
-            if payment_methods.len() == 1 && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat: _, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
+            if payment_methods.len() == 1 && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
         ));
 
         // Address with amount
@@ -1155,10 +1123,10 @@ mod tests {
         println!("Debug - bip21 with amount result for '{bip21_addr_amount}': {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
-                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
+                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
         ));
 
         // Address with amount and label
@@ -1170,11 +1138,11 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message: _, payment_methods })))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
                 && label.as_deref() == Some(lbl)
-                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
+                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
         ));
 
         // Address with amount, label and message
@@ -1187,12 +1155,12 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
+            Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message, payment_methods })))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
                 && label.as_deref() == Some(lbl)
                 && message.as_deref() == Some(msg)
-                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
+                && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
         ));
     }
 
@@ -1211,10 +1179,10 @@ mod tests {
 
             assert!(matches!(
                 result,
-                Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id, uri, extras, label, message, payment_methods })))
+                Ok(InputType::PaymentRequest(PaymentRequest::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
                 if payment_methods.len() == 1
                     && amount_sat == Some(amt)
-                    && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network, source }) if address == addr)
+                    && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
             ));
         }
     }

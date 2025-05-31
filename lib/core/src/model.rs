@@ -135,8 +135,8 @@ pub struct InitializeLoggingResponse {}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LightningPaymentRequest {
-    pub min_amount: MilliSatoshi,
-    pub max_amount: MilliSatoshi,
+    pub min_amount_msat: u64,
+    pub max_amount_msat: u64,
     pub method: LightningPaymentMethod,
 }
 
@@ -224,25 +224,6 @@ pub struct LnurlPaySuccessData {
     pub success_action: Option<SuccessActionProcessed>,
 }
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct MilliSatoshi(pub u64); // TODO: This type may vary across different SDKs. It may include assets in liquid for example.
-
-#[cfg(feature = "uniffi")]
-impl crate::UniffiCustomTypeConverter for MilliSatoshi {
-    type Builtin = u64;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(Self(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0
-    }
-}
-
-#[cfg(feature = "uniffi")]
-uniffi::custom_type!(MilliSatoshi, u64);
-
 #[derive(Clone, Copy, Debug, Display, Eq, PartialEq, Serialize, Deserialize)]
 #[strum(serialize_all = "lowercase")]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
@@ -254,9 +235,9 @@ pub enum Network {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Payment {
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
     pub created_at: u64,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
     pub id: String,
     pub payment_method: PaymentMethod,
@@ -324,13 +305,13 @@ pub struct PrepareBuyBitcoinRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareBuyBitcoinResponse {
     pub req: PrepareBuyBitcoinRequest,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareReceivePaymentRequest {
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
     pub receive_method: ReceiveMethod,
 }
 
@@ -338,9 +319,9 @@ pub struct PrepareReceivePaymentRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareReceivePaymentResponse {
     pub req: PrepareReceivePaymentRequest,
-    pub fee: MilliSatoshi,
-    pub min_payer_amount: MilliSatoshi,
-    pub max_payer_amount: MilliSatoshi,
+    pub fee_msat: u64,
+    pub min_payer_amount_msat: u64,
+    pub max_payer_amount_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -359,7 +340,7 @@ pub struct PrepareRefundResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendBitcoinRequest {
     pub method: BitcoinPaymentMethod,
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
     pub fee_rate_sat_per_kw: Option<u32>,
 }
 
@@ -367,7 +348,7 @@ pub struct PrepareSendBitcoinRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendBitcoinResponse {
     pub req: PrepareSendBitcoinRequest,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
 }
 
@@ -375,14 +356,14 @@ pub struct PrepareSendBitcoinResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLightningRequest {
     pub payment_request: LightningPaymentRequest,
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLightningResponse {
     pub req: PrepareSendLightningRequest,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
 }
 
@@ -390,7 +371,7 @@ pub struct PrepareSendLightningResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLnurlPayRequest {
     pub lnurl_pay: LnurlPaymentRequest,
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
     /// An optional comment for this payment
     pub comment: Option<String>,
 }
@@ -399,7 +380,7 @@ pub struct PrepareSendLnurlPayRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLnurlPayResponse {
     pub req: PrepareSendLnurlPayRequest,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
 }
 
@@ -407,14 +388,14 @@ pub struct PrepareSendLnurlPayResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLiquidAddressRequest {
     pub address: LiquidAddress,
-    pub amount: MilliSatoshi,
+    pub amount_msat: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareSendLiquidAddressResponse {
     pub req: PrepareSendLiquidAddressRequest,
-    pub fee: MilliSatoshi,
+    pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
 }
 

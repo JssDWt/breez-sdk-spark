@@ -35,11 +35,6 @@ impl Bip21Error {
     }
 }
 
-#[derive(Debug)]
-pub struct LnurlErrorData {
-    pub reason: String,
-}
-
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum ParseError {

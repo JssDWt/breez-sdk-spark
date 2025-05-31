@@ -1,4 +1,5 @@
-SUBDIRS := lib
+SUBDIRS := cli lib
+WASM_SUBDIRS := lib
 
 .PHONY: $(SUBDIRS)
 
@@ -8,6 +9,10 @@ $(SUBDIRS):
 default: check
 
 build: $(SUBDIRS)
+
+build-wasm: $(WASM_SUBDIRS)
+
+build-release: $(SUBDIRS)
 
 check: fmt-check clippy-check test
 
@@ -22,3 +27,5 @@ fmt-fix: $(SUBDIRS)
 fmt-check: $(SUBDIRS)
 
 test: $(SUBDIRS)
+
+wasm-clippy-check: $(WASM_SUBDIRS)

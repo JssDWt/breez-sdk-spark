@@ -18,7 +18,9 @@ pub enum LnurlError {
     #[error("lnurl missing domain")]
     MissingDomain,
     #[error("error calling lnurl endpoint: {0}")]
-    EndpointError(ServiceConnectivityError),
+    ServiceConnectivity(#[from] ServiceConnectivityError),
+    #[error("endpoint error: {0}")]
+    EndpointError(String),
     #[error("lnurl has http scheme without onion domain")]
     HttpSchemeWithoutOnionDomain,
     #[error("lnurl has https scheme with onion domain")]
@@ -29,12 +31,6 @@ pub enum LnurlError {
     UnknownScheme,
     #[error("lnurl has unknown scheme")]
     InvalidUri,
-}
-
-impl From<ServiceConnectivityError> for LnurlError {
-    fn from(err: ServiceConnectivityError) -> Self {
-        LnurlError::EndpointError(err)
-    }
 }
 
 impl From<TryFromSliceError> for LnurlError {

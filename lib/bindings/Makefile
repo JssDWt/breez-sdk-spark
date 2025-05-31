@@ -1,12 +1,38 @@
+UNAME := $(shell uname)
+FFI_DIR := ffi/
+BINNAME := libbreez_sdk_bindings
+RELEASE_DIR := ../../target/release
+
+ifeq ($(UNAME), Darwin)
+	CLANG_PREFIX += AR=$(shell brew --prefix llvm)/bin/llvm-ar CC=$(shell brew --prefix llvm)/bin/clang
+	BINEXT := dylib
+else ifeq ($(UNAME), Linux)
+	BINEXT := so
+endif
+
+BIN_PATH := $(RELEASE_DIR)/$(BINNAME).$(BINEXT)
+
 default: check
 
-bindings-python:
-	cargo run --features=uniffi/cli --bin uniffi-bindgen generate src/breez_sdk.udl --no-format --language python -o ffi/python
+bindings-kotlin: build-release
+	cargo run --features=uniffi/cli --bin uniffi-bindgen generate --library $(BIN_PATH) --no-format --language kotlin -o $(FFI_DIR)kotlin
+
+bindings-python: build-release
+	cargo run --features=uniffi/cli --bin uniffi-bindgen generate --library $(BIN_PATH) --no-format --language python -o $(FFI_DIR)python
+
+bindings-swift: build-release
+	cargo run --features=uniffi/cli --bin uniffi-bindgen generate --library $(BIN_PATH) --no-format --language swift -o $(FFI_DIR)swift
 
 build:
 	cargo build
 
-check: fmt-check clippy-check
+build-release:
+	cargo build --release
+
+build-wasm:
+	$(CLANG_PREFIX) cargo build --target=wasm32-unknown-unknown
+
+check: fmt-check clippy-check wasm-clippy-check
 
 clippy: clippy-check
 
@@ -30,3 +56,6 @@ fmt-check:
 
 test:
 	cargo test
+
+wasm-clippy-check:
+	$(CLANG_PREFIX) cargo clippy --all-targets --target=wasm32-unknown-unknown -- -D warnings

@@ -1,9 +1,21 @@
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Darwin)
+	CLANG_PREFIX += AR=$(shell brew --prefix llvm)/bin/llvm-ar CC=$(shell brew --prefix llvm)/bin/clang
+endif
+
 default: check
 
 build:
 	cargo build
 
-check: fmt-check clippy-check
+build-release:
+	cargo build --release
+
+build-wasm:
+	$(CLANG_PREFIX) cargo build --target=wasm32-unknown-unknown
+
+check: fmt-check clippy-check wasm-clippy-check
 
 clippy: clippy-check
 
@@ -27,3 +39,6 @@ fmt-check:
 
 test:
 	cargo test
+
+wasm-clippy-check:
+	$(CLANG_PREFIX) cargo clippy --all-targets --target=wasm32-unknown-unknown -- -D warnings
