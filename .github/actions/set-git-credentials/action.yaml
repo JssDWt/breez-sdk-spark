@@ -1,0 +1,29 @@
+name: 'Setup git credentials'
+description: 'Sets up git credentials for access to private remote repositories'
+inputs:
+  ssh-private-key:
+    description: 'The SSH private key to use for git operations'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: set git credentials
+      env:
+        SSH_PRIVATE_KEY: ${{inputs.ssh-private-key}}
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          eval `ssh-agent -s`
+          ssh-add ~/.ssh/id_rsa
+          echo -e "[net]\ngit-fetch-with-cli = true" >> %USERPROFILE%/.cargo/config.toml
+        else
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          sudo chmod 600 ~/.ssh/id_rsa
+          eval `ssh-agent -s`
+          ssh-add ~/.ssh/id_rsa
+          echo -e "[net]\ngit-fetch-with-cli = true" >> ~/.cargo/config.toml
+        fi
+        

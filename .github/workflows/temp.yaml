@@ -1,0 +1,64 @@
+name: temp CI
+
+on:
+  push:
+    branches: [ jssdwt-add-bindings ]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build-android-bindings:
+    uses: ./.github/workflows/build-bindings-android.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+  
+  build-darwin-bindings:
+    uses: ./.github/workflows/build-bindings-darwin.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+  
+  build-ios-bindings:
+    uses: ./.github/workflows/build-bindings-ios.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+  
+  build-linux-bindings:
+    uses: ./.github/workflows/build-bindings-linux.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+
+  build-wasm-bindings:
+    uses: ./.github/workflows/build-bindings-wasm.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+
+  build-windows-bindings:
+    uses: ./.github/workflows/build-bindings-windows.yml
+    with:
+      ref: ${{ github.sha }}
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}
+
+  build-language-bindings:
+    uses: ./.github/workflows/build-language-bindings.yml
+    with:
+      ref: ${{ github.sha }}
+      kotlin: true
+      swift: true
+      python: true
+      csharp: true
+      golang: true
+    secrets:
+      REPO_SSH_KEY: ${{ secrets.REPO_SSH_KEY }}

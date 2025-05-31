@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:    
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  build-core:
+    name: Build Core
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        working-directory: lib/core
+        run: make build
+
+      - name: Check git status
+        uses: ./.github/actions/check-git-status
+
+  build-cli:
+    name: Build cli
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        working-directory: cli
+        run: make build
+
+      - name: Check git status
+        uses: ./.github/actions/check-git-status
+
+  build-wasm:
+    name: Build wasm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        working-directory: lib/core
+        run: make build-wasm
+
+      - name: Check git status
+        uses: ./.github/actions/check-git-status
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Clippy
+        run: make clippy-check
+
+  fmt:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Format Check
+        run: make fmt-check
+  
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Tests
+        run: make test
+      
+      - name: Check git status
+        uses: ./.github/actions/check-git-status
+  
+  wasm-clippy:
+    name: Wasm clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Clippy
+        run: make wasm-clippy-check
