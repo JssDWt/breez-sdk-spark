@@ -8,7 +8,7 @@ use tracing::{debug, error};
 use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
-    input::{Bip21Extra, ParseError, PaymentMethod, PaymentScheme, PaymentRequestSource},
+    input::{Bip21Extra, ParseError, PaymentMethod, PaymentRequestSource, PaymentScheme},
     lnurl::{
         LnurlErrorData,
         auth::{self, LnurlAuthRequestData},
@@ -21,8 +21,7 @@ use super::{
     Bip21, BitcoinAddress, Bolt11RouteHint, Bolt11RouteHintHop, Bolt12InvoiceRequest, Bolt12Offer,
     Bolt12OfferBlindedPath, DetailedBolt11Invoice, DetailedBolt12Invoice, DetailedBolt12Offer,
     InputType, LightningAddress, LnurlPayRequest, LnurlWithdrawRequestData, ReceiveRequest,
-    SilentPaymentAddress,
-    error::Bip21Error,
+    SilentPaymentAddress, error::Bip21Error,
 };
 
 const BIP_21_PREFIX: &str = "bitcoin:";
