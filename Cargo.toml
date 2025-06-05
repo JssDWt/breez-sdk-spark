@@ -44,6 +44,7 @@ breez-sdk-macros = { path = "lib/macros" }
 clap = "4.5.39"
 dirs = "6.0.0"
 dns-parser = "0.8.0"
+extend = "1.2.0"
 flutter_rust_bridge = "=2.10.0"
 flutter_rust_bridge_codegen = "=2.10.0"
 hex = "0.4.3"
