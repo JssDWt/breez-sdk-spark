@@ -12,7 +12,7 @@ build:
 build-release:
 	cargo build --release
 
-build-wasm:
+build-wasm: install-wasm32-unknown-unknown
 	$(CLANG_PREFIX) cargo build --target=wasm32-unknown-unknown
 
 check: fmt-check clippy-check wasm-clippy-check
@@ -36,6 +36,9 @@ fmt-fix:
 
 fmt-check:
 	cargo fmt -- --check
+
+install-wasm32-unknown-unknown:
+	$(CLANG_PREFIX) rustup target add wasm32-unknown-unknown
 
 test:
 	cargo test
