@@ -8,7 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 async-trait.workspace = true
-breez-sdk-common = { workspace = true, features = ["flutter"] }
+breez-sdk-common.workspace = true
 breez-sdk-macros.workspace = true
 breez-sdk-spark.workspace = true
 extend = "1.2.0"
