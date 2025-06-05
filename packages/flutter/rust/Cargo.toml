@@ -7,7 +7,12 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-flutter_rust_bridge = "=2.10.0"
+async-trait.workspace = true
+breez-sdk-common = { workspace = true, features = ["flutter"] }
+breez-sdk-macros.workspace = true
+breez-sdk-spark.workspace = true
+extend = "1.2.0"
+flutter_rust_bridge.workspace = true
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

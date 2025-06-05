@@ -11,7 +11,8 @@ members = [
     "lib/core",
     "lib/bindings",
     "lib/macros",
-    "lib/common"
+    "lib/common",
+    "packages/flutter/rust"
 ]
 resolver = "2"
 
@@ -43,6 +44,8 @@ breez-sdk-macros = { path = "lib/macros" }
 clap = "4.5.39"
 dirs = "6.0.0"
 dns-parser = "0.8.0"
+flutter_rust_bridge = "=2.10.0"
+flutter_rust_bridge_codegen = "=2.10.0"
 hex = "0.4.3"
 hickory-resolver = "0.25.2"
 lazy_static = "1.5.0"

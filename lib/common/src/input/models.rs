@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{lnurl::auth::LnurlAuthRequestData, network::Network, utils::default_true};
+use crate::{lnurl::auth::LnurlAuthRequestData, network::BitcoinNetwork, utils::default_true};
 
 /// Wrapper for the decrypted [`AesSuccessActionData`] payload
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -59,7 +59,7 @@ pub struct Bip21Extra {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct BitcoinAddress {
     pub address: String,
-    pub network: Network,
+    pub network: BitcoinNetwork,
     pub source: PaymentRequestSource,
 }
 
@@ -123,7 +123,7 @@ pub struct DetailedBolt11Invoice {
     pub expiry: u64,
     pub invoice: Bolt11Invoice,
     pub min_final_cltv_expiry_delta: u64,
-    pub network: Network,
+    pub network: BitcoinNetwork,
     pub payee_pubkey: String,
     pub payment_hash: String,
     pub payment_secret: String,
@@ -163,7 +163,7 @@ pub struct DetailedBolt12Offer {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum InputType {
     LnurlAuth(LnurlAuthRequestData),
-    PaymentRequest(PaymentRequest),
+    PaymentRequest(PaymentScheme),
     ReceiveRequest(ReceiveRequest),
     Url(String),
 }
@@ -179,7 +179,7 @@ pub struct LightningAddress {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct LiquidAddress {
     pub address: String,
-    pub network: Network,
+    pub network: BitcoinNetwork,
     pub source: PaymentRequestSource,
 }
 
@@ -247,7 +247,7 @@ pub struct MessageSuccessActionData {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum PaymentRequest {
+pub enum PaymentScheme {
     Bip21(Bip21),
     PaymentMethod(PaymentMethod),
 }
@@ -311,7 +311,7 @@ pub enum ReceiveRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct SilentPaymentAddress {
     pub address: String,
-    pub network: Network,
+    pub network: BitcoinNetwork,
     pub source: PaymentRequestSource,
 }
 

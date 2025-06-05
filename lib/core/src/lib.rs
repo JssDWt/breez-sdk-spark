@@ -6,6 +6,7 @@ mod model;
 mod sdk;
 
 pub use breez_sdk_common::input::{InputType, ParseError, parse};
+pub use error::*;
 pub use model::*;
 pub use sdk::{BreezSdk, connect};
 

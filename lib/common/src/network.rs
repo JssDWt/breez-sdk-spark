@@ -3,7 +3,7 @@ use strum::Display;
 
 #[derive(Clone, Copy, Debug, Display, Eq, PartialEq, Serialize, Deserialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum Network {
+pub enum BitcoinNetwork {
     /// Mainnet
     Bitcoin,
     Testnet3,
@@ -12,27 +12,27 @@ pub enum Network {
     Regtest,
 }
 
-impl From<bitcoin::Network> for Network {
+impl From<bitcoin::Network> for BitcoinNetwork {
     fn from(network: bitcoin::Network) -> Self {
         match network {
-            bitcoin::Network::Bitcoin => Network::Bitcoin,
-            bitcoin::Network::Testnet => Network::Testnet3,
-            bitcoin::Network::Testnet4 => Network::Testnet4,
-            bitcoin::Network::Signet => Network::Signet,
-            bitcoin::Network::Regtest => Network::Regtest,
-            _ => Network::Bitcoin, // Default to Bitcoin for other networks
+            bitcoin::Network::Bitcoin => BitcoinNetwork::Bitcoin,
+            bitcoin::Network::Testnet => BitcoinNetwork::Testnet3,
+            bitcoin::Network::Testnet4 => BitcoinNetwork::Testnet4,
+            bitcoin::Network::Signet => BitcoinNetwork::Signet,
+            bitcoin::Network::Regtest => BitcoinNetwork::Regtest,
+            _ => BitcoinNetwork::Bitcoin, // Default to Bitcoin for other networks
         }
     }
 }
 
-impl From<Network> for bitcoin::Network {
-    fn from(network: Network) -> Self {
+impl From<BitcoinNetwork> for bitcoin::Network {
+    fn from(network: BitcoinNetwork) -> Self {
         match network {
-            Network::Bitcoin => bitcoin::Network::Bitcoin,
-            Network::Testnet3 => bitcoin::Network::Testnet,
-            Network::Testnet4 => bitcoin::Network::Testnet4,
-            Network::Signet => bitcoin::Network::Signet,
-            Network::Regtest => bitcoin::Network::Regtest,
+            BitcoinNetwork::Bitcoin => bitcoin::Network::Bitcoin,
+            BitcoinNetwork::Testnet3 => bitcoin::Network::Testnet,
+            BitcoinNetwork::Testnet4 => bitcoin::Network::Testnet4,
+            BitcoinNetwork::Signet => bitcoin::Network::Signet,
+            BitcoinNetwork::Regtest => bitcoin::Network::Regtest,
         }
     }
 }

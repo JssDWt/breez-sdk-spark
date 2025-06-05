@@ -37,6 +37,7 @@ dependencies:
   rust_lib_breez_sdk_spark:
     path: rust_builder
   flutter_rust_bridge: 2.10.0
+  freezed_annotation: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -47,9 +48,11 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
+  build_runner: ^2.4.15
   flutter_lints: ^5.0.0
   integration_test:
     sdk: flutter
+  freezed: ^3.0.6
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

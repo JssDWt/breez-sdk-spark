@@ -13,6 +13,7 @@ async-trait.workspace = true
 bech32.workspace = true
 bitcoin.workspace = true
 breez-sdk-macros.workspace = true
+# flutter_rust_bridge = { workspace = true, optional = true}
 hex.workspace = true
 lightning.workspace = true
 percent-encoding-rfc3986.workspace = true
@@ -46,6 +47,7 @@ tonic-web-wasm-client.workspace = true
 uniffi = { version = "0.29.2", features = ["wasm-unstable-single-threaded"], optional = true }
 
 [features]
+# flutter = ["dep:flutter_rust_bridge"]
 uniffi = ["dep:uniffi"]
 
 [lib]

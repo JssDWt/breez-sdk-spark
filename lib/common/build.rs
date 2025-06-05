@@ -22,3 +22,12 @@ pub fn compile_protos(proto: impl AsRef<Path>) -> io::Result<()> {
         .compile_protos(&[proto_path], &[proto_dir])?;
     Ok(())
 }
+
+    // let mut builder = tonic_build::configure();
+    
+    // #[cfg(feature = "flutter")]
+    // {
+    //     builder = builder.type_attribute(".", "/// flutter_rust_bridge::ignore");
+    // }
+
+    // builder.build_server(false)

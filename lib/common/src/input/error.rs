@@ -2,8 +2,6 @@ use thiserror::Error;
 
 use crate::{error::ServiceConnectivityError, lnurl::error::LnurlError};
 
-pub type ParseResult<T> = Result<T, ParseError>;
-
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum Bip21Error {

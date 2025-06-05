@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use breez_sdk_common::{
     ensure_sdk,
     fiat::FiatAPI,
-    input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentRequest},
+    input::{Bip21, InputType, PaymentMethod, PaymentMethodType, PaymentScheme},
     lnurl::auth::perform_lnurl_auth,
     rest::RestClient,
     utils::Arc,
@@ -215,12 +215,12 @@ impl BreezSdk {
     /// Typically used after parsing a payment request with the general input parser.
     pub async fn pick_payment_method(
         &self,
-        payment_request: PaymentRequest,
+        payment_request: PaymentScheme,
     ) -> Result<PickedPaymentMethod, PickPaymentMethodError> {
         // TODO: Liquid should unpack the magic routing hint for example to send to a liquid address directly.
         Ok(match payment_request {
-            PaymentRequest::Bip21(bip_21) => expand_bip_21(&bip_21, &self.supported)?,
-            PaymentRequest::PaymentMethod(payment_method) => expand_payment_method(payment_method),
+            PaymentScheme::Bip21(bip_21) => expand_bip_21(&bip_21, &self.supported)?,
+            PaymentScheme::PaymentMethod(payment_method) => expand_payment_method(payment_method),
         })
     }
 

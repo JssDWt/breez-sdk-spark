@@ -1,3 +1,4 @@
-rust_input: crate::api
+rust_input: crate,breez-sdk-common::input,breez-sdk-common::fiat,breez-sdk-common::error,breez-sdk-spark
+# rust_input: crate
 rust_root: rust/
 dart_output: lib/src/rust
