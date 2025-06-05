@@ -49,6 +49,25 @@ jobs:
 
       - name: Check git status
         uses: ./.github/actions/check-git-status
+  
+  build-flutter:
+    name: Build flutter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build
+        with:
+          ssh-private-key: ${{ secrets.REPO_SSH_KEY }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build
+        working-directory: packages/flutter
+        run: make flutter
+
+      - name: Check git status
+        uses: ./.github/actions/check-git-status
 
   build-wasm:
     name: Build wasm

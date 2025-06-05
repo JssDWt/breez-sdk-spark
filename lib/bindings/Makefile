@@ -19,9 +19,6 @@ default: check
 bindings-csharp: build-release install-uniffi-bindgen-cs
 	uniffi-bindgen-cs --library $(BIN_PATH) --out-dir $(FFI_DIR)csharp --no-format
 
-# bindings-dart: install-flutter-rust-bridge-codegen
-# 	flutter_rust_bridge_codegen
-
 bindings-go: build-release install-uniffi-bindgen-go
 	uniffi-bindgen-go --library $(BIN_PATH) --out-dir $(FFI_DIR)go --no-format
 
@@ -67,10 +64,7 @@ fmt-fix:
 
 fmt-check:
 	cargo fmt -- --check
-
-install-flutter-rust-bridge-codegen:
-	$(INSTALL_PREFIX) cargo install flutter_rust_bridge_codegen --version 2.10.0
-
+	
 install-uniffi-bindgen-cs:
 	$(INSTALL_PREFIX) cargo install uniffi-bindgen-cs --git https://github.com/NordSecurity/uniffi-bindgen-cs --tag v0.9.1+v0.28.3
 
