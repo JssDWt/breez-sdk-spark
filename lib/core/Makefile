@@ -43,5 +43,5 @@ install-wasm32-unknown-unknown:
 test:
 	cargo test
 
-wasm-clippy-check:
+wasm-clippy-check: install-wasm32-unknown-unknown
 	$(CLANG_PREFIX) cargo clippy --all-targets --target=wasm32-unknown-unknown -- -D warnings
