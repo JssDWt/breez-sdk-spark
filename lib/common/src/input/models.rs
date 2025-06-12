@@ -163,8 +163,10 @@ pub struct DetailedBolt12Offer {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 pub enum InputType {
     LnurlAuth(LnurlAuthRequestData),
-    PaymentRequest(PaymentScheme),
-    ReceiveRequest(ReceiveRequest),
+    Bip21(Bip21),
+    PaymentMethod(PaymentMethod),
+    Bolt12InvoiceRequest(Bolt12InvoiceRequest),
+    LnurlWithdraw(LnurlWithdrawRequestData),
     Url(String),
 }
 
@@ -243,13 +245,6 @@ pub struct LnurlWithdrawRequestData {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct MessageSuccessActionData {
     pub message: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum PaymentScheme {
-    Bip21(Bip21),
-    PaymentMethod(PaymentMethod),
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

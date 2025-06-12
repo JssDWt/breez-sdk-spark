@@ -8,7 +8,7 @@ use tracing::{debug, error};
 use crate::{
     dns::{self, DnsResolver},
     error::{ServiceConnectivityError, ServiceConnectivityErrorKind},
-    input::{Bip21Extra, ParseError, PaymentMethod, PaymentRequestSource, PaymentScheme},
+    input::{Bip21Extra, ParseError, PaymentMethod, PaymentRequestSource},
     lnurl::{
         LnurlErrorData,
         auth::{self, LnurlAuthRequestData},
@@ -20,8 +20,8 @@ use crate::{
 use super::{
     Bip21, BitcoinAddress, Bolt11RouteHint, Bolt11RouteHintHop, Bolt12InvoiceRequest, Bolt12Offer,
     Bolt12OfferBlindedPath, DetailedBolt11Invoice, DetailedBolt12Invoice, DetailedBolt12Offer,
-    InputType, LightningAddress, LnurlPayRequest, LnurlWithdrawRequestData, ReceiveRequest,
-    SilentPaymentAddress, error::Bip21Error,
+    InputType, LightningAddress, LnurlPayRequest, LnurlWithdrawRequestData, SilentPaymentAddress,
+    error::Bip21Error,
 };
 
 const BIP_21_PREFIX: &str = "bitcoin:";
@@ -61,12 +61,12 @@ where
 
         if input.contains('@') {
             if let Some(bip_21) = self.parse_bip_353(input).await? {
-                return Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip_21)));
+                return Ok(InputType::Bip21(bip_21));
             }
 
             if let Some(lightning_address) = self.parse_lightning_address(input).await {
-                return Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                    PaymentMethod::LightningAddress(lightning_address),
+                return Ok(InputType::PaymentMethod(PaymentMethod::LightningAddress(
+                    lightning_address,
                 )));
             }
         }
@@ -77,7 +77,7 @@ where
                 bip_353_address: None,
             };
             if let Some(bip_21) = parse_bip_21(input, &source)? {
-                return Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip_21)));
+                return Ok(InputType::Bip21(bip_21));
             }
         }
 
@@ -140,14 +140,12 @@ where
         };
 
         if let Some(payment_method) = parse_lightning_payment_method(input, source) {
-            return Ok(Some(InputType::PaymentRequest(
-                PaymentScheme::PaymentMethod(payment_method),
-            )));
+            return Ok(Some(InputType::PaymentMethod(payment_method)));
         }
 
         if let Some(bolt12_invoice_request) = parse_bolt12_invoice_request(input, source) {
-            return Ok(Some(InputType::ReceiveRequest(
-                crate::input::ReceiveRequest::Bolt12InvoiceRequest(bolt12_invoice_request),
+            return Ok(Some(InputType::Bolt12InvoiceRequest(
+                bolt12_invoice_request,
             )));
         }
 
@@ -194,12 +192,12 @@ where
 
         let address = format!("{user}@{domain}");
         match input_type {
-            InputType::PaymentRequest(PaymentScheme::PaymentMethod(PaymentMethod::LnurlPay(
-                pay_request,
-            ))) => Some(LightningAddress {
-                address,
-                pay_request,
-            }),
+            InputType::PaymentMethod(PaymentMethod::LnurlPay(pay_request)) => {
+                Some(LightningAddress {
+                    address,
+                    pay_request,
+                })
+            }
             _ => None, // TODO: log or return error.
         }
     }
@@ -303,16 +301,14 @@ where
             parse_json(&response).map_err(LnurlError::ServiceConnectivity)?;
         let domain = url.host().ok_or(LnurlError::MissingDomain)?.to_string();
         Ok(match lnurl_data {
-            LnurlRequestData::PayRequest { data } => InputType::PaymentRequest(
-                PaymentScheme::PaymentMethod(PaymentMethod::LnurlPay(LnurlPayRequest {
+            LnurlRequestData::PayRequest { data } => {
+                InputType::PaymentMethod(PaymentMethod::LnurlPay(LnurlPayRequest {
                     domain,
                     url: url.to_string(),
                     ..data
-                })),
-            ),
-            LnurlRequestData::WithdrawRequest { data } => {
-                InputType::ReceiveRequest(ReceiveRequest::LnurlWithdraw(data))
+                }))
             }
+            LnurlRequestData::WithdrawRequest { data } => InputType::LnurlWithdraw(data),
             LnurlRequestData::AuthRequest { data } => InputType::LnurlAuth(data),
             LnurlRequestData::Error { data } => return Err(LnurlError::EndpointError(data.reason)),
         })
@@ -529,9 +525,9 @@ fn parse_bitcoin(input: &str, source: &PaymentRequestSource) -> Option<InputType
         if hrp.to_lowercase().as_str() == "sp" {
             match parse_silent_payment_address(input, source) {
                 Some(silent_payment) => {
-                    return Some(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
+                    return Some(InputType::PaymentMethod(
                         PaymentMethod::SilentPaymentAddress(silent_payment),
-                    )));
+                    ));
                 }
                 None => {
                     return None;
@@ -541,8 +537,8 @@ fn parse_bitcoin(input: &str, source: &PaymentRequestSource) -> Option<InputType
     }
 
     if let Some(address) = parse_bitcoin_address(input, source) {
-        return Some(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-            PaymentMethod::BitcoinAddress(address),
+        return Some(InputType::PaymentMethod(PaymentMethod::BitcoinAddress(
+            address,
         )));
     }
 
@@ -755,9 +751,7 @@ mod tests {
 
     use crate::input::error::Bip21Error;
     use crate::input::parser::InputParser;
-    use crate::input::{
-        Bip21, Bip21Extra, BitcoinAddress, InputType, ParseError, PaymentMethod, PaymentScheme,
-    };
+    use crate::input::{Bip21, Bip21Extra, BitcoinAddress, InputType, ParseError, PaymentMethod};
     use crate::test_utils::mock_dns_resolver::MockDnsResolver;
     use crate::test_utils::mock_rest_client::{MockResponse, MockRestClient};
 
@@ -869,7 +863,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip21)))
+            Ok(InputType::Bip21(bip21))
             if bip21.amount_sat == Some(100_000)
         ));
     }
@@ -889,7 +883,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip21)))
+            Ok(InputType::Bip21(bip21))
             if bip21.message.as_deref() == Some("Hello World! & Special chars: $%")
         ));
     }
@@ -908,7 +902,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip21)))
+            Ok(InputType::Bip21(bip21))
             if bip21.extras.len() == 2 &&
                bip21.extras.contains(&Bip21Extra{ key: "custom".to_string(), value: "value".to_string()}) &&
                bip21.extras.contains(&Bip21Extra{ key: "another".to_string(), value: "param".to_string()})
@@ -1051,20 +1045,14 @@ mod tests {
         let result = input_parser.parse(&too_long_local).await;
 
         // Should not be recognized as a BIP353 address
-        assert!(!matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(_)))
-        ));
+        assert!(!matches!(result, Ok(InputType::Bip21(_))));
 
         // Domain part longer than 63 chars
         let too_long_domain = format!("user@{}.com", "a".repeat(60));
         let result = input_parser.parse(&too_long_domain).await;
 
         // Should not be recognized as a BIP353 address
-        assert!(!matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(_)))
-        ));
+        assert!(!matches!(result, Ok(InputType::Bip21(_))));
     }
 
     #[breez_sdk_macros::async_test_all]
@@ -1082,9 +1070,7 @@ mod tests {
             println!("Debug - bitcoin address result for '{address}': {result:?}");
             assert!(matches!(
                 result,
-                Ok(crate::input::InputType::PaymentRequest(
-                    PaymentScheme::PaymentMethod(PaymentMethod::BitcoinAddress(_))
-                ))
+                Ok(InputType::PaymentMethod(PaymentMethod::BitcoinAddress(_)))
             ));
         }
     }
@@ -1112,7 +1098,7 @@ mod tests {
         println!("Debug - valid bip21 address result for '{bip21_addr}': {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(Bip21 { amount_sat: _, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
+            Ok(InputType::Bip21(Bip21 { amount_sat: _, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods }))
             if payment_methods.len() == 1 && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
         ));
 
@@ -1122,7 +1108,7 @@ mod tests {
         println!("Debug - bip21 with amount result for '{bip21_addr_amount}': {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
+            Ok(InputType::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods }))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
                 && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
@@ -1137,7 +1123,7 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message: _, payment_methods })))
+            Ok(InputType::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message: _, payment_methods }))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
                 && label.as_deref() == Some(lbl)
@@ -1154,7 +1140,7 @@ mod tests {
         );
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message, payment_methods })))
+            Ok(InputType::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label, message, payment_methods }))
             if payment_methods.len() == 1
                 && amount_sat == Some(2000)
                 && label.as_deref() == Some(lbl)
@@ -1178,7 +1164,7 @@ mod tests {
 
             assert!(matches!(
                 result,
-                Ok(InputType::PaymentRequest(PaymentScheme::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods })))
+                Ok(InputType::Bip21(Bip21 { amount_sat, asset_id: _, uri: _, extras: _, label: _, message: _, payment_methods }))
                 if payment_methods.len() == 1
                     && amount_sat == Some(amt)
                     && matches!(&payment_methods[0], PaymentMethod::BitcoinAddress(BitcoinAddress { address, network: _, source: _ }) if address == addr)
@@ -1197,9 +1183,7 @@ mod tests {
         println!("Debug - bolt11 without prefix result: {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt11Invoice(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt11Invoice(_)))
         ));
 
         // Invoice with prefix
@@ -1208,9 +1192,7 @@ mod tests {
         println!("Debug - bolt11 with prefix result: {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt11Invoice(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt11Invoice(_)))
         ));
     }
 
@@ -1226,9 +1208,7 @@ mod tests {
         println!("Debug - capitalized bolt11 without prefix result: {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt11Invoice(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt11Invoice(_)))
         ));
 
         // Invoice with prefix
@@ -1237,9 +1217,7 @@ mod tests {
         println!("Debug - capitalized bolt11 with prefix result: {result:?}");
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt11Invoice(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt11Invoice(_)))
         ));
     }
 
@@ -1259,10 +1237,7 @@ mod tests {
             .parse(&format!("bitcoin:{addr}?lightning={bolt11}"))
             .await;
         println!("Debug - bolt11 with fallback bitcoin address (case 1): {result:?}");
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(_)))
-        ));
+        assert!(matches!(result, Ok(InputType::Bip21(_))));
 
         // Address with amount and invoice
         // BOLT11 is not the first URI arg (preceded by '&')
@@ -1272,10 +1247,7 @@ mod tests {
             ))
             .await;
         println!("Debug - bolt11 with fallback bitcoin address (case 2): {result:?}");
-        assert!(matches!(
-            result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(_)))
-        ));
+        assert!(matches!(result, Ok(InputType::Bip21(_))));
     }
 
     #[breez_sdk_macros::async_test_all]
@@ -1306,9 +1278,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt12Offer(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt12Offer(_)))
         ));
 
         // Test with lightning: prefix
@@ -1318,9 +1288,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::PaymentMethod(
-                PaymentMethod::Bolt12Offer(_)
-            )))
+            Ok(InputType::PaymentMethod(PaymentMethod::Bolt12Offer(_)))
         ));
     }
 
@@ -1340,7 +1308,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip21)))
+            Ok(InputType::Bip21(bip21))
             if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
         ));
 
@@ -1352,7 +1320,7 @@ mod tests {
 
         assert!(matches!(
             result,
-            Ok(InputType::PaymentRequest(PaymentScheme::Bip21(bip21)))
+            Ok(InputType::Bip21(bip21))
             if bip21.payment_methods.iter().any(|pm| matches!(pm, PaymentMethod::Bolt12Offer(_)))
             && bip21.amount_sat == Some(2000)
         ));
@@ -1539,8 +1507,8 @@ mod tests {
             println!("Debug - trim input result for '{address}': {result:?}");
             assert!(matches!(
                 result,
-                Ok(crate::input::InputType::PaymentRequest(
-                    PaymentScheme::PaymentMethod(PaymentMethod::BitcoinAddress(_))
+                Ok(crate::input::InputType::PaymentMethod(
+                    PaymentMethod::BitcoinAddress(_)
                 ))
             ));
         }
