@@ -73,6 +73,8 @@ pub struct BitcoinAddress {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt11Invoice {
     pub details: RawBolt11Invoice,
+    pub max_amount_msat: u64,
+    pub min_amount_msat: u64,
     pub source: PaymentRequestSource,
 }
 
@@ -125,6 +127,8 @@ pub struct Bolt12OfferBlindedPath {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct Bolt12Offer {
     pub details: RawBolt12Offer,
+    pub max_amount_msat: u64,
+    pub min_amount_msat: u64,
     pub source: PaymentRequestSource,
 }
 

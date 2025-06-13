@@ -2,8 +2,8 @@ use breez_sdk_common::{
     fiat::{FiatCurrency, Rate},
     input::{
         BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12InvoiceRequest, Bolt12Offer,
-        LiquidAddress, LnurlPayRequest, LnurlWithdrawRequestData, RawPaymentMethod,
-        SilentPaymentAddress, SuccessActionProcessed,
+        LightningAddress, LiquidAddress, LnurlPayRequest, LnurlWithdrawRequestData,
+        RawPaymentMethod, SilentPaymentAddress, SuccessActionProcessed,
     },
     lnurl::{LnurlCallbackStatus, LnurlErrorData, auth::LnurlAuthRequestData},
 };
@@ -241,13 +241,6 @@ pub enum PaymentType {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct LightningAddress {
-    pub address: String,
-    pub pay_request: LnurlPayRequest,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareBuyBitcoinRequest {
     pub provider: BuyBitcoinProvider,
     pub amount_sat: u64,
@@ -350,8 +343,6 @@ pub enum ReceiveMethod {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ReceivePaymentRequest {
     pub prepared: PrepareReceivePaymentResponse,
-    pub description: Option<String>,
-    pub use_description_hash: Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

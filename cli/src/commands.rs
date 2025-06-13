@@ -1,10 +1,7 @@
 use anyhow::anyhow;
 use breez_sdk_spark::{
-    BitcoinPaymentMethod, BreezSdk, InputType, LightningPaymentMethod, ListPaymentsRequest,
-    LnurlPaymentMethod, PickedPaymentMethod, PrepareReceivePaymentRequest,
-    PrepareSendBitcoinRequest, PrepareSendLightningRequest, PrepareSendLnurlPayRequest,
-    ReceiveMethod, ReceivePaymentRequest, SendBitcoinRequest, SendLightningRequest,
-    SendLnurlPayRequest, parse,
+    BreezSdk, InputType, ListPaymentsRequest, PrepareReceivePaymentRequest,
+    PrepareSendPaymentRequest, ReceiveMethod, ReceivePaymentRequest, SendPaymentRequest,
 };
 use clap::Parser;
 use rustyline::{
@@ -46,8 +43,12 @@ pub enum Command {
         payment_request: String,
 
         /// Optional amount to pay in satoshis
-        #[arg(short = 'r', long)]
+        #[arg(short = 'a', long)]
         amount: Option<u64>,
+
+        /// Optional message for the payment
+        #[arg(short = 'm', long)]
+        message: Option<String>,
     },
 
     /// Receive via onchain address
@@ -108,61 +109,137 @@ pub(crate) async fn execute_command(
         Command::Pay {
             payment_request,
             amount,
+            message,
         } => {
-            let parsed = parse(&payment_request).await?;
-            let payment_request = match parsed {
-                InputType::PaymentRequest(payment_request) => payment_request,
-                _ => return Err(anyhow::anyhow!("Not a payment request")),
-            };
-
-            let picked = sdk.pick_payment_method(payment_request).await?;
-            match picked {
-                PickedPaymentMethod::Bitcoin(bitcoin_payment_method) => {
+            let parsed = sdk.parse(&payment_request).await?;
+            match parsed {
+                InputType::BitcoinAddress(address) => {
                     let amount =
                         amount.ok_or(anyhow!("Amount is required for Bitcoin payments"))?;
-                    match &bitcoin_payment_method {
-                        BitcoinPaymentMethod::BitcoinAddress(bitcoin_address) => {
-                            println!("Bitcoin address: {}", bitcoin_address.address)
-                        }
-                        BitcoinPaymentMethod::SilentPaymentAddress(silent_payment_address) => {
-                            println!("Silent payment address: {}", silent_payment_address.address)
-                        }
-                    }
+                    println!("Bitcoin address: {}", address.details.address);
                     let recommended = sdk.fetch_recommended_fees().await?;
                     print_value(&recommended)?;
                     let rate = rl.readline_with_initial(
-                        "fee rate (sat/kw)",
+                        "fee rate (sat/vbyte)",
                         (&recommended.fastest_fee.to_string(), ""),
                     )?;
                     let prepared = sdk
-                        .prepare_send_bitcoin(PrepareSendBitcoinRequest {
-                            amount_msat: amount * 1000,
-                            method: bitcoin_payment_method,
-                            fee_rate_sat_per_kw: Some(rate.parse()?),
+                        .prepare_send_payment(
+                            breez_sdk_spark::PrepareSendPaymentRequest::BitcoinAddress {
+                                address,
+                                amount_sat: amount,
+                                fee_rate_sat_per_vbyte: Some(rate.parse()?),
+                            },
+                        )
+                        .await?;
+                    print_value(&prepared)?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
+                    print_value(&result)?;
+                    Ok(true)
+                }
+                InputType::Bolt11Invoice(invoice) => {
+                    println!("Bolt11 invoice: {}", invoice.details.invoice);
+                    let amount_msat = match (invoice.min_amount_msat, invoice.max_amount_msat) {
+                        (min, max) if min > 0 && min == max => min,
+                        (min, max) => {
+                            let line = rl.readline_with_initial(
+                                &format!("amount (msat) between {} and {}", min, max),
+                                (&min.to_string(), ""),
+                            )?;
+                            line.parse()?
+                        }
+                    };
+                    let prepared = sdk
+                        .prepare_send_payment(PrepareSendPaymentRequest::Bolt11Invoice {
+                            invoice,
+                            amount_msat,
+                        })
+                        .await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
+                    print_value(&result)?;
+                    Ok(true)
+                }
+                InputType::Bolt12Invoice(invoice) => {
+                    println!("Bolt12 invoice: {}", invoice.details.invoice);
+                    let prepared = sdk
+                        .prepare_send_payment(PrepareSendPaymentRequest::Bolt12Invoice { invoice })
+                        .await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
+                    print_value(&result)?;
+                    Ok(true)
+                }
+                InputType::Bolt12InvoiceRequest(bolt12_invoice_request) => {
+                    return Err(anyhow!("Not a payment request"));
+                }
+                InputType::Bolt12Offer(offer) => {
+                    println!("Bolt12 offer: {}", offer.details.offer);
+                    let amount_msat = match (offer.min_amount_msat, offer.max_amount_msat) {
+                        (min, max) if min > 0 && min == max => min,
+                        (min, max) => {
+                            let line = rl.readline_with_initial(
+                                &format!("amount (msat) between {} and {}", min, max),
+                                (&min.to_string(), ""),
+                            )?;
+                            line.parse()?
+                        }
+                    };
+                    let prepared = sdk
+                        .prepare_send_payment(PrepareSendPaymentRequest::Bolt12Offer {
+                            offer,
+                            amount_msat,
+                            message,
+                        })
+                        .await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
+                    print_value(&result)?;
+                    Ok(true)
+                }
+                InputType::LightningAddress(address) => {
+                    println!("Lightning address: {}", address.address);
+                    let amount_msat = match (
+                        address.pay_request.min_sendable,
+                        address.pay_request.max_sendable,
+                    ) {
+                        (min, max) if min > 0 && min == max => min,
+                        (min, max) => {
+                            let line = rl.readline_with_initial(
+                                &format!("amount (msat) between {} and {}", min, max),
+                                (&min.to_string(), ""),
+                            )?;
+                            line.parse()?
+                        }
+                    };
+                    let prepared = sdk
+                        .prepare_send_payment(PrepareSendPaymentRequest::LightningAddress {
+                            address,
+                            amount_msat,
+                            message,
+                        })
+                        .await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
+                    print_value(&result)?;
+                    Ok(true)
+                }
+                InputType::LiquidAddress(address) => {
+                    println!("Liquid address: {}", address.details.address);
+                    let amount = amount.ok_or(anyhow!("Amount is required for Liquid payments"))?;
+                    let prepared = sdk
+                        .prepare_send_payment(PrepareSendPaymentRequest::LiquidAddress {
+                            address,
+                            amount_sat: amount,
                         })
                         .await?;
                     print_value(&prepared)?;
-                    let result = sdk.send_bitcoin(SendBitcoinRequest { prepared }).await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
                     print_value(&result)?;
                     Ok(true)
                 }
-                PickedPaymentMethod::Lightning(lightning_payment_request) => {
-                    match &lightning_payment_request.method {
-                        LightningPaymentMethod::Bolt11Invoice(bolt11_invoice) => {
-                            println!("Bolt11 invoice: {}", bolt11_invoice.bolt11)
-                        }
-                        LightningPaymentMethod::Bolt12Invoice(bolt12_invoice) => {
-                            println!("Bolt12 invoice: {}", bolt12_invoice.invoice)
-                        }
-                        LightningPaymentMethod::Bolt12Offer(bolt12_offer) => {
-                            println!("Bolt12 offer: {}", bolt12_offer.offer)
-                        }
-                    }
-
-                    let amount_msat = match (
-                        lightning_payment_request.min_amount_msat,
-                        lightning_payment_request.max_amount_msat,
-                    ) {
+                InputType::LnurlAuth(lnurl_auth_request_data) => {
+                    return Err(anyhow!("Not a payment request"));
+                }
+                InputType::LnurlPay(url) => {
+                    println!("Lnurl pay: {}", url.url);
+                    let amount_msat = match (url.min_sendable, url.max_sendable) {
                         (min, max) if min > 0 && min == max => min,
                         (min, max) => {
                             let line = rl.readline_with_initial(
@@ -173,72 +250,59 @@ pub(crate) async fn execute_command(
                         }
                     };
                     let prepared = sdk
-                        .prepare_send_lightning(PrepareSendLightningRequest {
-                            payment_request: lightning_payment_request,
+                        .prepare_send_payment(PrepareSendPaymentRequest::LnurlPay {
+                            url,
                             amount_msat,
+                            message,
                         })
                         .await?;
-                    let result = sdk
-                        .send_lightning(SendLightningRequest { prepared })
-                        .await?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
                     print_value(&result)?;
                     Ok(true)
                 }
-                PickedPaymentMethod::LnurlPay(lnurl_payment_request) => {
-                    match &lnurl_payment_request.payment_method {
-                        LnurlPaymentMethod::LnurlPay(url) => println!("LnurlPay request: {}", url),
-                        LnurlPaymentMethod::LightningAddress(address) => {
-                            println!("Lightning address: {}", address)
-                        }
-                    }
-
-                    let amount_msat = match (
-                        lnurl_payment_request.request.min_sendable,
-                        lnurl_payment_request.request.max_sendable,
-                    ) {
-                        (min, max) if min > 0 && min == max => min,
-                        (min, max) => {
-                            let line = rl.readline_with_initial(
-                                &format!("amount (msat) between {} and {}", min, max),
-                                (&min.to_string(), ""),
-                            )?;
-                            line.parse()?
-                        }
-                    };
-
-                    let line = rl.readline("comment (optional)")?;
-                    let comment = if line.is_empty() { None } else { Some(line) };
+                InputType::LnurlWithdraw(lnurl_withdraw_request_data) => {
+                    return Err(anyhow!("Not a payment request"));
+                }
+                InputType::SilentPaymentAddress(address) => {
+                    println!("Silent payment address: {}", address.details.address);
+                    let amount = amount.ok_or(anyhow!(
+                        "Amount is required for Silent Payment Address payments"
+                    ))?;
+                    let recommended = sdk.fetch_recommended_fees().await?;
+                    print_value(&recommended)?;
+                    let rate = rl.readline_with_initial(
+                        "fee rate (sat/vbyte)",
+                        (&recommended.fastest_fee.to_string(), ""),
+                    )?;
                     let prepared = sdk
-                        .prepare_send_lnurl_pay(PrepareSendLnurlPayRequest {
-                            lnurl_pay: lnurl_payment_request,
-                            amount_msat,
-                            comment,
+                        .prepare_send_payment(PrepareSendPaymentRequest::SilentPaymentAddress {
+                            address,
+                            amount_sat: amount,
+                            fee_rate_sat_per_vbyte: Some(rate.parse()?),
                         })
                         .await?;
-                    let result = sdk.send_lnurl_pay(SendLnurlPayRequest { prepared }).await?;
+                    print_value(&prepared)?;
+                    let result = sdk.send_payment(SendPaymentRequest { prepared }).await?;
                     print_value(&result)?;
                     Ok(true)
                 }
-                PickedPaymentMethod::LiquidAddress(_liquid_address) => todo!(),
+                InputType::Url(_) => return Err(anyhow!("Not a payment request")),
             }
         }
         Command::ReceiveOnchain => {
             let line = rl.readline("amount (satoshis)")?;
             let amount: u64 = line.parse().map_err(|_| anyhow!("Invalid amount"))?;
+            let line = rl.readline("message (optional)")?;
+            let message = if line.is_empty() { None } else { Some(line) };
             let prepared = sdk
                 .prepare_receive_payment(PrepareReceivePaymentRequest {
-                    receive_method: ReceiveMethod::BitcoinAddress,
                     amount_msat: amount * 1000,
+                    message,
+                    receive_method: ReceiveMethod::BitcoinAddress,
                 })
                 .await?;
-            let line = rl.readline("description (optional)")?;
-            let description = if line.is_empty() { None } else { Some(line) };
             let result = sdk
-                .receive_payment(ReceivePaymentRequest {
-                    prepared,
-                    description,
-                    use_description_hash: None,
-                })
+                .receive_payment(ReceivePaymentRequest { prepared })
                 .await?;
             print_value(&result)?;
             Ok(true)
@@ -246,16 +310,13 @@ pub(crate) async fn execute_command(
         Command::ReceiveLightning { amount, memo } => {
             let prepared = sdk
                 .prepare_receive_payment(PrepareReceivePaymentRequest {
-                    receive_method: ReceiveMethod::Bolt11Invoice,
                     amount_msat: amount * 1000,
+                    message: memo,
+                    receive_method: ReceiveMethod::Bolt11Invoice,
                 })
                 .await?;
             let result = sdk
-                .receive_payment(ReceivePaymentRequest {
-                    prepared,
-                    description: memo,
-                    use_description_hash: None,
-                })
+                .receive_payment(ReceivePaymentRequest { prepared })
                 .await?;
             print_value(&result)?;
             Ok(true)

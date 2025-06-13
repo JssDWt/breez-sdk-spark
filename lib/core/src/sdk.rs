@@ -113,8 +113,6 @@ impl BreezSdk {
                     min_payer_amount_msat: amount_msat,
                     max_payer_amount_msat: amount_msat,
                 },
-                description: None,
-                use_description_hash: None,
             })
             .await?;
 
@@ -396,13 +394,23 @@ fn expand_payment_method(
             InputType::BitcoinAddress(BitcoinAddress { details, source })
         }
         RawPaymentMethod::Bolt11Invoice(details) => {
-            InputType::Bolt11Invoice(Bolt11Invoice { details, source })
+            InputType::Bolt11Invoice(Bolt11Invoice {
+                details,
+                source,
+                max_amount_msat: 0,
+                min_amount_msat: 0,
+            }) // TODO: Set the correct min and max
         }
         RawPaymentMethod::Bolt12Invoice(details) => {
             InputType::Bolt12Invoice(Bolt12Invoice { details, source })
         }
         RawPaymentMethod::Bolt12Offer(details) => {
-            InputType::Bolt12Offer(Bolt12Offer { details, source })
+            InputType::Bolt12Offer(Bolt12Offer {
+                details,
+                source,
+                max_amount_msat: 0,
+                min_amount_msat: 0,
+            }) // TODO: Set the correct min and max
         }
         RawPaymentMethod::LightningAddress(address) => InputType::LightningAddress(address),
         RawPaymentMethod::LiquidAddress(details) => {
