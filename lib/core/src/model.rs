@@ -1,8 +1,9 @@
 use breez_sdk_common::{
     fiat::{FiatCurrency, Rate},
     input::{
-        BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12Offer, LiquidAddress, LnurlPayRequest,
-        PaymentMethod, ReceiveRequest, SilentPaymentAddress, SuccessActionProcessed,
+        BitcoinAddress, Bolt11Invoice, Bolt12Invoice, Bolt12InvoiceRequest, Bolt12Offer,
+        LiquidAddress, LnurlPayRequest, LnurlWithdrawRequestData, RawPaymentMethod,
+        SilentPaymentAddress, SuccessActionProcessed,
     },
     lnurl::{LnurlCallbackStatus, LnurlErrorData, auth::LnurlAuthRequestData},
 };
@@ -24,13 +25,6 @@ pub struct AcceptPaymentProposedFeesResponse {}
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct AddEventListenerResponse {
     pub listener_id: String,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum BitcoinPaymentMethod {
-    BitcoinAddress(BitcoinAddress),
-    SilentPaymentAddress(SilentPaymentAddress),
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Display, EnumString, PartialEq, Serialize)]
@@ -132,22 +126,6 @@ pub struct InitializeLoggingRequest {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct InitializeLoggingResponse {}
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct LightningPaymentRequest {
-    pub min_amount_msat: u64,
-    pub max_amount_msat: u64,
-    pub method: LightningPaymentMethod,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum LightningPaymentMethod {
-    Bolt11Invoice(Bolt11Invoice),
-    Bolt12Invoice(Bolt12Invoice),
-    Bolt12Offer(Bolt12Offer),
-}
-
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ListPaymentsRequest {
@@ -185,21 +163,6 @@ pub struct LnurlAuthRequest {
 pub struct LnurlAuthResponse {
     // TODO: This should be empty, only on error should it contain an error message?
     pub callback_status: LnurlCallbackStatus,
-}
-
-// TODO: Create easier interface for lnurl pay
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct LnurlPaymentRequest {
-    pub request: LnurlPayRequest,
-    pub payment_method: LnurlPaymentMethod,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum LnurlPaymentMethod {
-    LnurlPay(String),
-    LightningAddress(String),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -240,7 +203,7 @@ pub struct Payment {
     pub fee_msat: u64,
     pub fee_breakdown: FeeBreakdown,
     pub id: String,
-    pub payment_method: PaymentMethod,
+    pub payment_method: RawPaymentMethod,
     pub payment_request: String,
     pub payment_type: PaymentType,
     pub status: PaymentState,
@@ -277,21 +240,10 @@ pub enum PaymentType {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum PickedPaymentMethod {
-    Bitcoin(BitcoinPaymentMethod),
-    Lightning(LightningPaymentRequest),
-    LnurlPay(LnurlPaymentRequest),
-    LiquidAddress(LiquidAddress),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-pub enum PickedInputType {
-    LnurlAuth(LnurlAuthRequestData),
-    PaymentMethod(PickedPaymentMethod),
-    ReceiveRequest(ReceiveRequest),
-    Url(String),
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+pub struct LightningAddress {
+    pub address: String,
+    pub pay_request: LnurlPayRequest,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -312,6 +264,7 @@ pub struct PrepareBuyBitcoinResponse {
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct PrepareReceivePaymentRequest {
     pub amount_msat: u64,
+    pub message: Option<String>,
     pub receive_method: ReceiveMethod,
 }
 
@@ -337,66 +290,50 @@ pub struct PrepareRefundResponse {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendBitcoinRequest {
-    pub method: BitcoinPaymentMethod,
-    pub amount_msat: u64,
-    pub fee_rate_sat_per_kw: Option<u32>,
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
+pub enum PrepareSendPaymentRequest {
+    BitcoinAddress {
+        address: BitcoinAddress,
+        amount_sat: u64,
+        fee_rate_sat_per_vbyte: Option<u64>,
+    },
+    Bolt11Invoice {
+        invoice: Bolt11Invoice,
+        amount_msat: u64,
+    },
+    Bolt12Invoice {
+        invoice: Bolt12Invoice,
+    },
+    Bolt12Offer {
+        offer: Bolt12Offer,
+        amount_msat: u64,
+        message: Option<String>,
+    },
+    LightningAddress {
+        address: LightningAddress,
+        amount_msat: u64,
+        message: Option<String>,
+    },
+    LiquidAddress {
+        address: LiquidAddress,
+        amount_sat: u64,
+    },
+    LnurlPay {
+        url: LnurlPayRequest,
+        amount_msat: u64,
+        message: Option<String>,
+    },
+    SilentPaymentAddress {
+        address: SilentPaymentAddress,
+        amount_sat: u64,
+        fee_rate_sat_per_vbyte: Option<u64>,
+    },
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendBitcoinResponse {
-    pub req: PrepareSendBitcoinRequest,
-    pub fee_msat: u64,
-    pub fee_breakdown: FeeBreakdown,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLightningRequest {
-    pub payment_request: LightningPaymentRequest,
-    pub amount_msat: u64,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLightningResponse {
-    pub req: PrepareSendLightningRequest,
-    pub fee_msat: u64,
-    pub fee_breakdown: FeeBreakdown,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLnurlPayRequest {
-    pub lnurl_pay: LnurlPaymentRequest,
-    pub amount_msat: u64,
-    /// An optional comment for this payment
-    pub comment: Option<String>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLnurlPayResponse {
-    pub req: PrepareSendLnurlPayRequest,
-    pub fee_msat: u64,
-    pub fee_breakdown: FeeBreakdown,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLiquidAddressRequest {
-    pub address: LiquidAddress,
-    pub amount_msat: u64,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct PrepareSendLiquidAddressResponse {
-    pub req: PrepareSendLiquidAddressRequest,
-    pub fee_msat: u64,
-    pub fee_breakdown: FeeBreakdown,
+pub struct PrepareSendPaymentResponse {
+    // TODO
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -404,8 +341,9 @@ pub struct PrepareSendLiquidAddressResponse {
 pub enum ReceiveMethod {
     BitcoinAddress,
     Bolt11Invoice,
+    Bolt12InvoiceRequest(Bolt12InvoiceRequest),
     Bolt12Offer,
-    ReceiveRequest(ReceiveRequest),
+    LnurlWithdraw(LnurlWithdrawRequestData),
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -485,50 +423,14 @@ pub enum SdkEvent {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendBitcoinRequest {
-    pub prepared: PrepareSendBitcoinResponse,
+pub struct SendPaymentRequest {
+    pub prepared: PrepareSendPaymentResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendBitcoinResponse {
+pub struct SendPaymentResponse {
     pub payment: Payment,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLightningRequest {
-    pub prepared: PrepareSendLightningResponse,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLightningResponse {
-    pub payment: Payment,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLiquidAddressRequest {
-    pub prepared: PrepareSendLiquidAddressResponse,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLiquidAddressResponse {
-    pub payment: Payment,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLnurlPayRequest {
-    pub prepared: PrepareSendLnurlPayResponse,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-pub struct SendLnurlPayResponse {
-    pub result: LnurlPayResult,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

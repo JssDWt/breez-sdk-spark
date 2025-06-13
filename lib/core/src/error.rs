@@ -122,10 +122,6 @@ pub enum PickPaymentMethodError {
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareSendBitcoinError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
 pub enum PrepareBuyBitcoinError {
     #[error("Invalid amount: {0}")]
     InvalidAmount(String),
@@ -139,15 +135,7 @@ pub enum PrepareBuyBitcoinError {
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareSendLightningError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareSendLiquidAddressError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum PrepareSendLnurlPayError {}
+pub enum PrepareSendPaymentError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -171,19 +159,7 @@ pub enum RegisterWebhookError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum SendBitcoinError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum SendLightningError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum SendLiquidAddressError {}
-
-#[derive(Debug, Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-pub enum SendLnurlPayError {}
+pub enum SendPaymentError {}
 
 #[derive(Debug, Error)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
